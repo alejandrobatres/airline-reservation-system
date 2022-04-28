@@ -37,6 +37,15 @@ conn =  pymysql.connect(host=app.config['APP_HOST'],
 def index():
     return render_template("index.html")
 
+@app.route('/login')
+def login():
+	return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('username')
+    return redirect('/')
+
 # REST = Representational State Transfer
 # GET, POST are REST methods
 # GET specifies what to do when the client wants a page loaded
@@ -98,18 +107,21 @@ def register():
         cursor.close() # This will error if there's an error with conn.cursor() BTW
     return render_template("register.html", error=error, success=success, allusers=allusers)
 
-@app.route('/')
-def hello():
-	return render_template('index.html')
+@app.route('/Airline-Staff-Register')
+def airline_staff_register():
+    return render_template('Airline-Staff-Register.html')
 
-@app.route('/login')
-def login():
-	return render_template('login.html')
+@app.route('/Airline-Staff-Login')
+def airline_staff_login():
+    return render_template('Airline-Staff-Login.html')
 
-@app.route('/logout')
-def logout():
-    session.pop('username')
-    return redirect('/')
+@app.route('/Customer-Register')
+def customer_register():
+    return render_template('Customer-Register.html')
+
+@app.route('/Customer-Login')
+def customer_login():
+    return render_template('Customer-Login.html')
 
 
 
