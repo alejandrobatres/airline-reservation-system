@@ -97,6 +97,22 @@ def register():
             error = "An error occurred: {}".format(e)
         cursor.close() # This will error if there's an error with conn.cursor() BTW
     return render_template("register.html", error=error, success=success, allusers=allusers)
+
+@app.route('/')
+def hello():
+	return render_template('index.html')
+
+@app.route('/login')
+def login():
+	return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('username')
+    return redirect('/')
+
+
+
     
 if __name__ == "__main__":
     app.run("127.0.0.1", 8000, debug = True)
