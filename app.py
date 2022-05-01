@@ -178,28 +178,121 @@ def customerTrackSpending():
 
 
 #Airline Staff Use Cases
+@app.route('/Airline-Staff-View-Flights', methods = ['GET', 'POST'])
 def staffViewFlights():
     return
 
 @app.route('/Airline-Staff-Create-Flights', methods=['GET', 'POST'])
 def staffCreateFlights():
-    return 
+    airline_name = request.form.get['airline-name']
+    departure_date = request.form.get['departure-date']
+    departure_time = request.form.get['departure-time']
+    flight_number = request.form.get['flight-number']
+    departure_airport = request.form.get['departure-airport']
+    arrival_airport = request.form.get['arrival-airport']
+    arrival_date = request.form.get['arrival-airport']
+    arrival_time = request.form.get['arrival-time']
+    base_price = request.form.get['base-price']
+    airplane_ID = request.form.get['airplane-ID']
 
-@app.route('/Airline-Staff-Update-Flights', methods=['GET', 'POST'])
-def staffUpdateFlights():
-    return
+    cursor = conn.cursor()
+    query = ('SELECT * FROM Flight'
+            'WHERE FlightNumber = %s AND DepartureDate = %s AND DepartureTime = %s')
+    cursor.execute(query, (flight_number, departure_date, departure_time))
+    data = cursor.fetchone()
+
+    if (data):      #flight already exists
+        return
+    
+    else: 
+        flightValues = 'INSERT INTO Flight VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
+        cursor.execute(flightValues, (airline_name, departure_date, departure_time, flight_number, departure_airport, arrival_airport, arrival_date, arrival_time, base_price, airplane_ID))
+        arrivesValues = 'INSERT INTO Arrives VALUES(%s, %s, %s, %s)'
+        cursor.execute(arrivesValues, (arrival_airport, flight_number, departure_date, departure_time))
+        departsValues = 'INSERT INTO Departs VALUES(%s, %s, %s, %s)'
+        cursor.execute(departsValues, (departure_airport, flight_number, departure_date, departure_time))
+        username = session['username']
+        changesValues = 'INSERT INTO Changes VALUES(%s, %s, %s, %s, %s)'
+        cursor.execute(changesValues, (username, flight_number, departure_date, departure_time, 'On Time'))
+        conn.commit()
+        cursor.close()
+        return render_template()            #need a new template here
+
+@app.route('/Airline-Staff-Update-Flight-Status', methods=['GET', 'POST'])
+def staffUpdateFlightStatus():
+    username = session['username']
+    flight_number = request.form.get['flight-number']
+    departure_date = request.form.get['departure-date']
+    departure_time = request.form.get['departure-time']
+    flight_status = request.form.get['flight-status']
+    
+    cursor = conn.cursor()
+    query = ('SELECT * FROM Changes '
+            'WHERE Username = %s AND FlightNumber = %s AND DepartureDate = %s AND DepartureTime = %s')
+    cursor.execute(query, (username, flight_number, departure_date, departure_time))
+    data = cursor.fetchone()
+
+    if (data):
+        updateFlightQuery = ('UPDATE Changes SET Username = %s, FlightStatus = %s'
+                            'WHERE FlightNumber = %s AND DepartureDate = %s AND DepartureTime = %s')
+        cursor.execute(updateFlightQuery, (username, flight_number, departure_date, departure_time, flight_status))
+        conn.commit()
+        cursor.close()
+        return render_template()        #need new template here   
+
+    else: 
+        #flight does not exist
+        return
 
 
 @app.route('/Airline-Staff-Add-Airplane', methods=['GET', 'POST'])
 def staffAddAirplane():
+    airline_name = request.form.get['airline-name']
+    airplane_id = request.form.get['airplane-ID']
+    num_seats = request.form.get['num-seats']
+    airplane_company = request.form.get['airplane_company']
+    airplane_age = request.form.get['airplane_age']
 
+    cursor = conn.cursor()
+    query = ('SELECT * FROM Airplane'
+            'WHERE AirlineName = %s AND AirplaneID = %s')
+    cursor.execute(query, (airline_name, airplane_id))
+    data = cursor.fetchone()
 
-    return
+    if (data):
+        return
+    else:
+        addAirplane = 'INSERT INTO Airplane VALUES(%s, %s, %s, %s, %s)'
+        cursor.execute(addAirplane, (airline_name, airplane_id, num_seats, airplane_company, airplane_age))
+        getAirplanes = ('SELECT * FROM Airplane'
+                        'WHERE airlineName = %s')
+        cursor.execute(getAirplanes, (airline_name))
+        all_airplanes = cursor.fetchall()
+        conn.commit()
+        cursor.close()
+        return render_template()        #need a new template here
 
 @app.route('/Airline-Staff-Add-Airport', methods=['GET', 'POST'])
 def staffAddAirport():
+    airport_code = request.form.get['airport_code']
+    airport_name = request.form.get['airport_code']
+    airport_city = request.form.get['airport_city']
+    airport_country = request.form.get['airport_country']
+    airport_type = request.form.get['airport_type']
 
-    return
+    cursor = conn.cursor()
+    query = ('SELECT * FROM Airport'
+            'WHERE AirportName = %s')
+    cursor.execute(query, (airport_name))
+    data = cursor.fetchone()
+    if (data):
+        return
+    else:
+        addAirport = 'INSERT INTO Airport Values(%s, %s, %s, %s, %s)'
+        cursor.execute(addAirport, (airport_code, airport_name, airport_city, airport_country, airport_type))
+        conn.commit()
+        cursor.close()
+        return
 
 
 @app.route('/Airline-Staff-View-Ratings')
@@ -222,6 +315,11 @@ def staffViewRevenue():
 
 def staffViewRevenueTravelClass():
     return
+
+def staffViewTopDestinations():
+    return
+
+
 
 
 
