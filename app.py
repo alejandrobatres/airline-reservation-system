@@ -20,14 +20,14 @@ app.config['APP_HOST'] = "localhost" # 127.0.0.1 is localhost IP for all compute
 
 # Set this to your custom DB information
 app.config['DB_USER'] = "root"
-app.config['DB_PASSWORD'] = "root"
+app.config['DB_PASSWORD'] = '' #"root"
 app.config['APP_DB'] = "blog"
 app.config['CHARSET'] = "utf8mb4"
 
 # Connect to the DB
 conn =  pymysql.connect(host=app.config['APP_HOST'],
                        user=app.config['DB_USER'],
-                       unix_socket='/Applications/MAMP/tmp/mysql/mysql.sock',
+                       #unix_socket='/Applications/MAMP/tmp/mysql/mysql.sock',
                        password=app.config['DB_PASSWORD'],
                        db=app.config['APP_DB'],
                        charset=app.config['CHARSET'],
@@ -59,7 +59,8 @@ def register():
     
     # Prepared SQL Statement - Just basic SQL
     # "%s" is NOT specifically a string. It's a placeholder for the values you pass in to PyMySQL
-    createUserStatement = "INSERT INTO SiteUser(`email`, `password`, `type`) VALUES(%s, md5(%s), %s)"
+    createUserStatement = ("INSERT INTO SiteUser(`email`, `password`, `type`) "
+                            "VALUES(%s, md5(%s), %s)")
     fetchUserStatement = "SELECT * FROM SiteUser WHERE type = %s"
 
     if request.method == 'POST':
@@ -124,7 +125,106 @@ def customer_login():
     return render_template('Customer-Login.html')
 
 
+#Customer Use Cases
+@app.route('Customer-View-Flights')
+def customerViewFlights():
+    username = session['username']
+    cursor = conn.cursor()
+    query = ('SELECT AirlineName, FlightNumber, DepartureDate, DepartureTime, ArrivalDate, ArrivalTime, FlightStatus'
+            'FROM Flight NATURAL JOIN Changes NATURAL JOIN PurchasedFor NATURAL JOIN Ticket NATURAL JOIN CUSTOMER'
+            'WHERE CustomerEmail = %s AND DepartureDate > CURRENT_DATE OR (DepartureDate = CURRENT_DATE AND DepartureTime > CURRENT_TIME)' 
+            'ORDER BY DepartureDate')
+    cursor.execute(query, (username))
+    data = cursor.fetchall()
+    for item in data:
+        print(item['AirlineName'])
+        cursor.close()
+    return render_template('Customer-View-Flights.html')
 
-    
+@app.route('Customer-View-Past-Flights')
+def customerViewPastFlights():
+    username = session['username']
+    cursor = conn.cursor()
+    query = ('SELECT AirlineName, FlightNumber, DepartureDate, DepartureTime, ArrivalDate, ArrivalTime, FlightStatus'
+            'FROM Flight NATURAL JOIN Changes NATURAL JOIN PurchasedFor NATURAL JOIN Ticket NATURAL JOIN CUSTOMER'
+            'WHERE CustomerEmail = %s AND DepartureDate < CURRENT_DATE OR (DepartureDate = CURRENT_DATE AND DepartureTime < CURRENT_TIME)' 
+            'ORDER BY DepartureDate')
+    cursor.execute(query, (username))
+    data = cursor.fetchall()
+    for item in data:
+        print(item['AirlineName'])
+        cursor.close()
+    return render_template('Customer-View-Past-Flights.html')
+
+@app.route('Customer-Search-Flights')
+def customerSearchFlights():
+    return render_template('Customer-Search-Flights.html')
+
+
+def customerPurchaseFlight():
+    return
+
+
+def customerCancelTrip():
+    return
+
+def customerRateComment():
+    return
+
+
+def customerTrackSpending():
+    return
+
+
+
+#Airline Staff Use Cases
+def staffViewFlights():
+    return
+
+@app.route('/Airline-Staff-Create-Flights', methods=['GET', 'POST'])
+def staffCreateFlights():
+    return 
+
+@app.route('/Airline-Staff-Update-Flights', methods=['GET', 'POST'])
+def staffUpdateFlights():
+    return
+
+
+@app.route('/Airline-Staff-Add-Airplane', methods=['GET', 'POST'])
+def staffAddAirplane():
+
+
+    return
+
+@app.route('/Airline-Staff-Add-Airport', methods=['GET', 'POST'])
+def staffAddAirport():
+
+    return
+
+
+@app.route('/Airline-Staff-View-Ratings')
+def staffViewRatings():
+    return
+
+
+@app.route('Airline-Staff-View-Frequent-Customers')
+def staffViewFreqCustomers():
+    return
+
+
+@app.route('Airline-Staff-View-Reports')
+def staffViewReports():
+    return
+
+
+def staffViewRevenue():
+    return
+
+def staffViewRevenueTravelClass():
+    return
+
+
+
+
 if __name__ == "__main__":
     app.run("127.0.0.1", 8000, debug = True)
