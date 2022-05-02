@@ -126,7 +126,7 @@ def customer_login():
 
 
 #Customer Use Cases
-@app.route('Customer-View-Flights')
+@app.route('/Customer-View-Flights')
 def customerViewFlights():
     username = session['username']
     cursor = conn.cursor()
@@ -141,7 +141,7 @@ def customerViewFlights():
         cursor.close()
     return render_template('Customer-View-Flights.html')
 
-@app.route('Customer-View-Past-Flights')
+@app.route('/Customer-View-Past-Flights')
 def customerViewPastFlights():
     username = session['username']
     cursor = conn.cursor()
@@ -156,31 +156,115 @@ def customerViewPastFlights():
         cursor.close()
     return render_template('Customer-View-Past-Flights.html')
 
-@app.route('Customer-Search-Flights')
+@app.route('/Customer-Search-Flights')
 def customerSearchFlights():
     return render_template('Customer-Search-Flights.html')
 
+@app.route('/Customer-Search-One-Way-Flights', methods = ['GET', 'POST'])
+def customerSearchOneWay():
+    departure_city = request.form.get['departure-city']
+    departure_airport = request.form.get['departure-airport']
+    destination_city = request.form.get['destination-city']
+    destination_airport = request.form.get['destination-airport']
+    departure_date = request.form.get['departure-date']
+    cursor = conn.cursor()
+    oneWayQuery = ('SELECT ')
+    'SELECT f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, ArrivalDate, FlightStatus, COUNT(ticketID) as booked, numberOfSeats FROM flight as f LEFT JOIN purchasedfor AS p ON p.FlightNumber = f.FlightNumber AND p.DepartureDate = f.DepartureDate AND p.DepartureTime = f.DepartureTime INNER JOIN updates AS u ON u.FlightNumber = f.FlightNumber AND u.DepartureDate = f.DepartureDate AND u.DepartureTime = f.DepartureTime INNER JOIN airplane ON f.AirplaneID = airplane.AirplaneID INNER JOIN airport AS a1 ON a1.AirportName = f.DepartureAirport INNER JOIN airport AS a2 ON a2.AirportName = f.ArrivalAirport WHERE f.FlightNumber NOT IN (SELECT FlightNumber from flight as f2 GROUP BY FlightNumber HAVING COUNT(f2.FlightNumber) > 1) AND a1.AirportCity = %s AND f.DepartureAirport = %s AND a2.AirportCity = %s AND f.ArrivalAirport = %s AND f.DepartureDate = %s GROUP BY f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, ArrivalDate, FlightStatus HAVING booked < NumberOfSeats'
+	
+    return
 
+
+@app.route('/Customer-Search-Two-Way-Flights', methods = ['GET', 'POST'])
+def customerSearchTwoWay():
+    return
+
+
+@app.route('/Customer-Purchase-Flight', methods = ['GET', 'POST'])
 def customerPurchaseFlight():
+    flight_number = request.form.get['flight-number']
+    departure_date = request.form.get['departure-date']
+    departure_time = request.form.get['departure-time']
+    cursor = conn.cursor()
+    #query = 'SELECT f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, f.BasePrice, f.ArrivalDate, f.ArrivalTime, f.ArrivalAirport, f.DepartureAirport, COUNT(ticketID)'
     return
 
 
 def customerCancelTrip():
     return
 
+
+@app.route('/Customer-Rate-Comment', methods = ['GET', 'POST'])
 def customerRateComment():
+    CustomerEmail = session['username']
+    customer_ticket_ID = request.form.get['ticket-ID']
+    customer_rate = request.form.get['rate']
+    customer_comment = request.form.get['comment']
+    cursor = conn.cursor()
+    flightExistsQuery = ('SELECT FlightNumber, DepartureDate, DepartureTime'
+                        'FROM Ticket NATURAL JOIN PurchasedFor NATURAL JOIN Customer'
+                        'WHERE CustomerEmail = %s AND TicketID = %s AND (CURRENT_DATE > DepartureDate OR (CURRENT_DATE = DepartureDate AND CURRENT_TIME > DepartureTime))')
+    cursor.execute(flightExistsQuery, (CustomerEmail, customer_ticket_ID))
+    data = cursor.fetchone()
+    noRatingCommentQuery = ('SELECT FlightNumber, DepartureDate, DepartureTime, TicketID'
+                            'FROM Suggested NATURAL JOIN Ticket'
+                            'WHERE CuustomerEmail = %s AND TicketID = %s')
+    cursor.execute(noRatingCommentQuery, (CustomerEmail, customer_ticket_ID))
+    data1 = cursor.fetchone()
+
+    if (data and not (data1)):
+        customer_flight_number = data['FlightNumber']
+        customer_departure_date = data['DepartureDate']
+        customer_departure_time = data['DepartureTime']
+        query = 'INSERT INTO Suggested VALUES(%s, %s, %s, %s, %s, %s)'
+        cursor.execute(query, (CustomerEmail, customer_flight_number, customer_departure_date, customer_departure_time, customer_comment, customer_rate))
+        conn.commit()
+        cursor.close()
+        return render_template('Customer-Rate-Comment.html')
+    elif (data1):
+        return
+    
     return
 
 
+@app.route('/Customer-Track-Spending')
 def customerTrackSpending():
-    return
+    username = session['username']
+    cursor = conn.cursor()
+    yearlySpendingQuery = ('SELECT SUM(SoldPrice) As Spent'
+                            'FROM TICKET NATURAL JOIN PurchasedFor'
+                            'WHERE CustomerEmail = %s AND PurchaseDate >= CURRENT_DATE - INTERVAL 1 YEAR')
+    cursor.execute(yearlySpendingQuery, (username))
+    #yearlySpend = cursor.fetchone()['spend']
+
+    monthlySpendingQuery = ('SELECT MONTHNAME(PurchaseDate) AS Month, SUM(SoldPrice) AS Spent'
+            'FROM Ticket NATURAL JOIN PurchasedFor'
+            'WHERE CustomerEmail = %s AND PurchaseDate >= CURRENT_DATE - INTERVAL 6 MONTH'
+            'GROUP BY MONTHNAME(PurchaseDate)')
+    cursor.execute(monthlySpendingQuery, (username))
+    #montlySpend = cursor.fetchall()
+
+    return render_template('Customer-Track-Spending.html')
 
 
 
 #Airline Staff Use Cases
 @app.route('/Airline-Staff-View-Flights', methods = ['GET', 'POST'])
 def staffViewFlights():
-    return
+    username = session['username']
+    cursor = conn.cursor()
+    query = ('SELECT AirlineName FROM AirlineStaff'
+            'WHERE Username = %s')
+    cursor.execute(query, (username))
+    airline_name = cursor.fetchone()
+    current_airline_name = airline_name['AirlineName']
+    flightQuery = ('SELECT DISTINCT FlightNumber, DepartureDate, DepartureTime, DepartureAirport, ArrivalDate, ArrivalTime FROM AirlineStaff NATURAL JOIN Flight'
+                  'WHERE AirlineName = %s AND (DepartureDate <= CURRENT_DATE + INTERVAL 30 DAY AND (DepartureDate > CURRENT_DATE))'
+                  'OR (DepartureDate = CURRENT_DATE AND DepartureTime > CURRENT_TIME')
+    cursor.execute(flightQuery, (current_airline_name))
+    data = cursor.fetchall()
+    cursor.close()
+    return render_template('Airline-Staff-View-Flights.html', flights = data)
+
 
 @app.route('/Airline-Staff-Create-Flights', methods=['GET', 'POST'])
 def staffCreateFlights():
@@ -295,29 +379,107 @@ def staffAddAirport():
         return
 
 
-@app.route('/Airline-Staff-View-Ratings')
+@app.route('/Airline-Staff-View-Ratings', methods = ['GET', 'POST'])
 def staffViewRatings():
-    return
+    flight_number = request.form.get['flight-number']
+    departure_date = request.form.get['departure-date']
+    departure_time = request.form.get['departure-time']
+    cursor = conn.cursor()
+    query = ('SELECT CustomerComment, Rate FROM Suggested'
+            'WHERE FlightNumber = %s AND DepartureDate = %s AND DepartureTime = %s')
+    cursor.execute(query, (flight_number, departure_date, departure_time))
+    data = cursor.fetchall()
+
+    if (data):
+        return render_template('Airline-Staff-View-Ratings.html')
+    
+    else: 
+        return
 
 
 @app.route('Airline-Staff-View-Frequent-Customers')
 def staffViewFreqCustomers():
+    cursor = conn.cursor()
+    queryMonth = ('SELECT COUNT(*) AS ticketSold FROM ')
     return
 
 
 @app.route('Airline-Staff-View-Reports')
 def staffViewReports():
+    cursor = conn.cursor()
+    query = ('SELECT COUNT(TicketID) AS totalTickets, MONTHNAME(PurchaseDate) AS Month'
+            'FROM Ticket WHERE PurchaseDate >= CURRENT_DATE - INTERVAL 1 MONTH GROUP BY Month')
+    cursor.execute(query)
     return
 
-
+@app.route('/Airline-Staff-View-Revenue')
 def staffViewRevenue():
-    return
+    cursor = conn.cursor()
+    monthlyRevenueQuery = ('SELECT SUM(SoldPrice) AS Sale'
+                           'FROM Ticket'
+                           'WHERE PurchaseDate >= CURRENT_DATE - INTERVAL 1 MONTH')
+    cursor.execute(monthlyRevenueQuery)
+    #monthSales = cursor.fetchall()
 
+    annualRevenueQuery = ('SELECT Sum(SoldPrice) As Sale'
+                          'FROM Ticket'
+                          'WHERE PurchaseDate >= CURRENT_DATE - INTERVAL 1 YEAR')
+    cursor.execute(annualRevenueQuery)
+    #yearSales = cursor.fetchall()
+
+    return render_template('Airline-Staff-Compare-Revenue.html')
+
+
+@app.route('/Airline-Staff-View-Revenue-Travel-Class')
 def staffViewRevenueTravelClass():
-    return
+    cursor = conn.cursor()
+    classRevenueQuery = ('SELECT Sum(SoldPrice) AS Sale'
+                         'FROM Ticket'
+                         'WHERE PurchaseDate <= CURRENT_DATE'
+                         'GROUP BY TravelClass')
+    cursor.execute(classRevenueQuery)
 
+    return render_template('Airline-Staff-View-Revenue-Travel-Class.html')
+
+@app.route('/Airline-Staff-View-Top-Destinations')
 def staffViewTopDestinations():
-    return
+    username = session['username']
+    cursor = conn.cursor()
+    airlineQuery = ('SELECT AirlineName FROM AirlineStaff'
+                    'WHERE username = %s')
+    cursor.execute(airlineQuery, (username))
+    airline_name = cursor.fetchone()
+    ratingsQuery = ('SELECT AirlineName, FlightNumber, DepartureDate, DepartureTime, AVG(Rate) as averageRating'
+                    'FROM Suggested NATURAL JOIN Flight'
+                    'WHERE AirlineName = %s'
+                    'GROUP BY AirlineName, FlightNumber, DepartureDate, DepartureTime')
+    cursor.execute(ratingsQuery, (airline_name['AirlineName']))
+    #averageRatings = cursor.fetchall()
+    conn.commit()
+    topDestinationsMonthQuery = ('SELECT AirportCity'
+                            'FROM TICKET NATURAL JOIN PurchasedFor NATURAL JOIN Flight INNER JOIN Airport'
+                            'ON arrivalAirport = airport.AirportName'
+                            'WHERE AirlineName = %s AND arrivalDate >= CURRENT_DATE - INTERVAL 3 MONTH'
+                            'GROUP BY AirportName'
+                            'ORDER BY Count(AirportName) DESC'
+                            'LIMIT 3')
+    cursor.execute(topDestinationsMonthQuery, (airline_name['AirlineName']))
+    topDestMonth = cursor.fetchall()
+    conn.commit()
+
+    topDestinationsYearQuery = ('SELECT AirportCity'
+                            'FROM TICKET NATURAL JOIN PurchasedFor NATURAL JOIN Flight INNER JOIN Airport'
+                            'ON arrivalAirport = airport.AirportName'
+                            'WHERE AirlineName = %s AND arrivalDate >= CURRENT_DATE - INTERVAL 1 YEAR'
+                            'GROUP BY AirportName'
+                            'ORDER BY Count(AirportName) DESC'
+                            'LIMIT 3')
+    cursor.execute(topDestinationsYearQuery, (airline_name['AirlineName']))
+    topDestYear = cursor.fetchall()
+    conn.commit()
+    cursor.close()
+
+    return render_template('Airline-Staff-View-Top-Destination.html')
 
 
 
