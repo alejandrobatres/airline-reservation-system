@@ -189,7 +189,6 @@ def customerViewPastFlights():
     for item in data:
         print(item['AirlineName'])
         cursor.close()
-<<<<<<< HEAD
     return render_template('Customer-View-Past-Flights.html')
 
 @app.route('/Customer-Search-Flights')
@@ -291,85 +290,6 @@ def customerTrackSpending():
 
     return render_template('Customer-Track-Spending.html')
 
-=======
-    return render_template('customer-view-past-flights.html')
-
-@app.route('/customer-flight-search')
-def customer_flight_search():
-    return render_template('customer-flight-search.html')
-
-@app.route('/rate-flights')
-def rate_flights():
-    return render_template('rate-fights.html')
-
-@app.route('/rate-flights-auth', methods=['GET', 'POST'])
-def rate_flight_auth(): 
-	customerEmail = session['username']
-	custTicketID = request.form['ticket-number']
-	custRate = request.form['rate']
-	custComment = request.form['comment']
-	cursor = conn.cursor(); 
-	print(request.form)
-	checkCustFlightExist = 'SELECT FlightNumber, DepartureDate, DepartureTime FROM ticket NATURAL JOIN purchasedfor NATURAL JOIN customer WHERE CustomerEmail = %s AND TicketID = %s AND (CURRENT_DATE > DepartureDate OR (CURRENT_DATE = DepartureDate AND CURRENT_TIME > DepartureTime))'
-	cursor.execute(checkCustFlightExist,(customerEmail, custTicketID))
-	data1 = cursor.fetchone()
-	print(data1)
-	checkNoRate = 'SELECT FlightNumber, DepartureDate, DepartureTime, TicketID FROM suggested NATURAL JOIN ticket WHERE CustomerEmail = %s AND TicketID = %s'
-	cursor.execute(checkNoRate, (customerEmail, custTicketID))
-	data2 = cursor.fetchone()
-	print(data2)
-	print(data2)
-	if(data1 and not(data2)): #customer was on the flight and there was no rating written 
-		custFlightNum = data1['FlightNumber']
-		custDeptDate = data1['DepartureDate']
-		custDeptTime = data1['DepartureTime']
-		ins = 'INSERT INTO suggested VALUES(%s, %s, %s, %s, %s, %s)'
-		cursor.execute(ins, (customerEmail, custFlightNum, custDeptDate, custDeptTime, custComment, custRate))
-		conn.commit()
-		cursor.close()
-		message = "Submitted Successfully! Click the back button to go home!"
-		return render_template('rate-flights.html', message = message)
-	elif (data2): 
-		error = "Flight already given a rating"
-		return render_template('rate-flights.html', error=error)
-	else: 
-		error = "Ticket ID does not exist or Departure Date in the Future"
-		return render_template('rate-flights.html', error=error)
-
-@app.route('/track-spending')
-def track_spending(): 
-	username = session['username']
-	cursor = conn.cursor()
-	getCustYearlySpending = 'SELECT SUM(SoldPrice) AS spend FROM ticket NATURAL JOIN purchasedfor WHERE CustomerEmail = %s AND PurchaseDate >= CURRENT_DATE - INTERVAL 1 YEAR'
-	cursor.execute(getCustYearlySpending, (username))
-	yearSpend = cursor.fetchone()['spend']
-	getCustMonthlySpending = 'SELECT MONTHNAME(PurchaseDate) AS month, SUM(soldPrice) as spent FROM ticket NATURAL JOIN purchasedfor WHERE CustomerEmail = %s AND PurchaseDate >= CURRENT_DATE - INTERVAL 6 MONTH GROUP BY MONTHNAME(PurchaseDate)'
-	cursor.execute(getCustMonthlySpending, (username))
-	custMonthlySpending = cursor.fetchall() 
-	labels = []
-	months = {1:'January', 2: 'February', 3:'March',4:'April',5:'May',6:'June',7:'July',8:'August',9:'September',10:'October',11:'November',12:'December'}
-	from datetime import date
-	currMonth = date.today().month
-	earliest = currMonth-5
-	for i in range(earliest,currMonth+1): 
-		if i>0 and i<13: 
-			labels.append(months[i])
-		elif i < 1: 
-			i += 12
-			labels.append(months[i])
-	values = []
-	for elem in labels:
-		added = False
-		for i in range (len(custMonthlySpending)): 
-			if custMonthlySpending[i]['month'] == elem: 
-				values.append(custMonthlySpending[i]['spent'])
-				added = True
-				break
-		if added == False: 
-			values.append(0)
-	maximumValue = max(values) + 10
-	return render_template('track-spending.html', labels = labels, values = values, yearSpend = yearSpend, max = maximumValue)
->>>>>>> 5b09f362583314169597634557b6c1fa5f87fdb6
 
 
 #Airline Staff Use Cases
