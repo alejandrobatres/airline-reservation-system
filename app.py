@@ -20,14 +20,14 @@ app.config['APP_HOST'] = "localhost" # 127.0.0.1 is localhost IP for all compute
 
 # Set this to your custom DB information
 app.config['DB_USER'] = "root"
-app.config['DB_PASSWORD'] = '' #"root"
-app.config['APP_DB'] = "blog"
+app.config['DB_PASSWORD'] = '' # 'root' if using unix, '' if using windows
+app.config['APP_DB'] = "air_ticket_reservation"
 app.config['CHARSET'] = "utf8mb4"
 
 # Connect to the DB
 conn =  pymysql.connect(host=app.config['APP_HOST'],
                        user=app.config['DB_USER'],
-                       #unix_socket='/Applications/MAMP/tmp/mysql/mysql.sock',
+                       # unix_socket='/Applications/MAMP/tmp/mysql/mysql.sock', # for use in unix mamp
                        password=app.config['DB_PASSWORD'],
                        db=app.config['APP_DB'],
                        charset=app.config['CHARSET'],
@@ -37,9 +37,9 @@ conn =  pymysql.connect(host=app.config['APP_HOST'],
 def index():
     return render_template("index.html")
 
-@app.route('/login')
-def login():
-	return render_template('login.html')
+@app.route('/customer-login')
+def customer_login():
+	return render_template('customer-login.html')
 
 @app.route('/logout')
 def logout():
@@ -51,62 +51,88 @@ def logout():
 # GET specifies what to do when the client wants a page loaded
 # POST is for when you want to mutate data in your database
  
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    error = None
-    success = None
-    allusers = None
-    
-    # Prepared SQL Statement - Just basic SQL
-    # "%s" is NOT specifically a string. It's a placeholder for the values you pass in to PyMySQL
-    createUserStatement = ("INSERT INTO SiteUser(`email`, `password`, `type`) "
-                            "VALUES(%s, md5(%s), %s)")
-    fetchUserStatement = "SELECT * FROM SiteUser WHERE type = %s"
+# customer registration
+@app.route('/customer-registration', methods=['GET', 'POST'])
+def customer_registration():
+    return render_template('customer-registration.html')
 
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        typeUser = 1
+@app.route('/customer-registration-auth', methods=['GET', 'POST'])
+def customer_registration_auth():
+    	#grabs information from the forms
+	name = request.form['name']
+	phone = request.form['phone']
+	email = request.form['email']
+	password = request.form['password']
+	buildingNumber = request.form['building-number']
+	street = request.form['street']
+	city = request.form['city']
+	state = request.form['state']
+	passportNumber = request.form['passport-number']
+	passportExp = request.form['passport-expiration']
+	passportCountry = request.form['passport-country']
+	dateOfBirth = request.form['date-of-birth']
+	print(request.form)
+	#cursor used to send queries
+	cursor = conn.cursor()
+	#executes query
+	noDupEmailQuery = 'SELECT CustomerEmail FROM customer WHERE CustomerEmail = %s'
+	cursor.execute(noDupEmailQuery, (email))
+	#stores the results in a variable
+	data = cursor.fetchone()
+	#use fetchall() if you are expecting more than 1 data row
+	error = None
+	if(data):
+		#If the previous query returns data, then user exists
+		error = "This user already exists"
+		return render_template('customer-registration.html', error = error)
+	else:
+		#password = hashlib.md5(password.encode())
+		ins = 'INSERT INTO Customer VALUES(%s, %s, md5(%s), %s, %s, %s, %s, %s, %s, %s, %s, %s)'
+		cursor.execute(ins, (name, email, password, int(buildingNumber), street, city, state, phone, passportNumber,passportExp, passportCountry, dateOfBirth))
+		conn.commit()
+		cursor.close()
+		return render_template('index.html')
 
-        if not validateEmail(email):
-            error = "Invalid email!"
+def loggedIn():
+    return len(session) > 0
 
-        try:
-            # Need cursor for database connections!
-            cursor = conn.cursor()
+@app.route('/customer-login-auth',  methods=['GET', 'POST'])
+def customer_login_auth():
+	#grabs information from the forms
+	username = request.form['customer-username']
+	password = request.form['customer-password']
 
-            # Pass in tuple of values
+	#cursor used to send queries
+	cursor = conn.cursor()
+	# executes query
+	query = 'SELECT CustomerEmail, CustomerPassword FROM customer WHERE CustomerEmail = %s and CustomerPassword = md5(%s)'
+	cursor.execute(query, (username, password))
+	#stores the results in a variable
+	data = cursor.fetchone()
+	# use fetchall() if you are expecting more than 1 data row
+	cursor.close()
+	error = None
+	
+	sessionRunning = loggedIn()
+	if (sessionRunning == True): 
+		error = 'Other users signed in. Please sign out of current session.'
+		return render_template('customer-login.html', error=error)
+	
+	if(data):
+		# creates a session for the the user
+		# session is a built in
+		session['username'] = username
+		#session['role'] = 'customer'
+		return render_template('customer-home.html', name = username)
+		#return redirect(url_for('Customer-Home'))
+	else:
+		error = 'Invalid login or username'
+		return render_template('customer-login.html', error=error)
 
-            # getting all users
-            cursor.execute(fetchUserStatement, (1))
-            allusers = cursor.fetchall()
-
-            # creating user
-            cursor.execute(createUserStatement, (email, password, typeUser))
-            conn.commit() # Whenever you update or insert using PyMySQL, you must commit to the database            
-
-            # Always close when you're done with the cursor
-        except Exception as e:
-            error = "An error occurred: {}".format(e)
-        cursor.close() # This will error if there's an error with conn.cursor() BTW
-        
-        if not error:
-            success = "User added successfully"
-        # We can pass variables to our HTML templates!
-    elif request.method == 'GET':
-        try:
-            # Need cursor for database connections!
-            cursor = conn.cursor()
-
-            # Pass in tuple of values
-            cursor.execute(fetchUserStatement, (1))
-            allusers = cursor.fetchall()
-
-            # Always close when you're done with the cursor
-        except Exception as e:
-            error = "An error occurred: {}".format(e)
-        cursor.close() # This will error if there's an error with conn.cursor() BTW
-    return render_template("register.html", error=error, success=success, allusers=allusers)
+@app.route('/customer-home')
+def customer_home():
+    username = session['username']
+    return render_template('customer-home.html', name = session['username'])
 
 @app.route('/Airline-Staff-Register')
 def airline_staff_register():
@@ -115,14 +141,6 @@ def airline_staff_register():
 @app.route('/Airline-Staff-Login')
 def airline_staff_login():
     return render_template('Airline-Staff-Login.html')
-
-@app.route('/Customer-Register')
-def customer_register():
-    return render_template('Customer-Register.html')
-
-@app.route('/Customer-Login')
-def customer_login():
-    return render_template('Customer-Login.html')
 
 
 #Public Info
@@ -143,7 +161,7 @@ def publicViewFlights():
 
 
 #Customer Use Cases
-@app.route('/Customer-View-Flights')
+@app.route('/customer-view-flights')
 def customerViewFlights():
     username = session['username']
     cursor = conn.cursor()
@@ -156,9 +174,9 @@ def customerViewFlights():
     for item in data:
         print(item['AirlineName'])
         cursor.close()
-    return render_template('Customer-View-Flights.html')
+    return render_template('customer-view-flights.html')
 
-@app.route('/Customer-View-Past-Flights')
+@app.route('/customer-view-past-flights')
 def customerViewPastFlights():
     username = session['username']
     cursor = conn.cursor()
@@ -171,6 +189,7 @@ def customerViewPastFlights():
     for item in data:
         print(item['AirlineName'])
         cursor.close()
+<<<<<<< HEAD
     return render_template('Customer-View-Past-Flights.html')
 
 @app.route('/Customer-Search-Flights')
@@ -272,6 +291,85 @@ def customerTrackSpending():
 
     return render_template('Customer-Track-Spending.html')
 
+=======
+    return render_template('customer-view-past-flights.html')
+
+@app.route('/customer-flight-search')
+def customer_flight_search():
+    return render_template('customer-flight-search.html')
+
+@app.route('/rate-flights')
+def rate_flights():
+    return render_template('rate-fights.html')
+
+@app.route('/rate-flights-auth', methods=['GET', 'POST'])
+def rate_flight_auth(): 
+	customerEmail = session['username']
+	custTicketID = request.form['ticket-number']
+	custRate = request.form['rate']
+	custComment = request.form['comment']
+	cursor = conn.cursor(); 
+	print(request.form)
+	checkCustFlightExist = 'SELECT FlightNumber, DepartureDate, DepartureTime FROM ticket NATURAL JOIN purchasedfor NATURAL JOIN customer WHERE CustomerEmail = %s AND TicketID = %s AND (CURRENT_DATE > DepartureDate OR (CURRENT_DATE = DepartureDate AND CURRENT_TIME > DepartureTime))'
+	cursor.execute(checkCustFlightExist,(customerEmail, custTicketID))
+	data1 = cursor.fetchone()
+	print(data1)
+	checkNoRate = 'SELECT FlightNumber, DepartureDate, DepartureTime, TicketID FROM suggested NATURAL JOIN ticket WHERE CustomerEmail = %s AND TicketID = %s'
+	cursor.execute(checkNoRate, (customerEmail, custTicketID))
+	data2 = cursor.fetchone()
+	print(data2)
+	print(data2)
+	if(data1 and not(data2)): #customer was on the flight and there was no rating written 
+		custFlightNum = data1['FlightNumber']
+		custDeptDate = data1['DepartureDate']
+		custDeptTime = data1['DepartureTime']
+		ins = 'INSERT INTO suggested VALUES(%s, %s, %s, %s, %s, %s)'
+		cursor.execute(ins, (customerEmail, custFlightNum, custDeptDate, custDeptTime, custComment, custRate))
+		conn.commit()
+		cursor.close()
+		message = "Submitted Successfully! Click the back button to go home!"
+		return render_template('rate-flights.html', message = message)
+	elif (data2): 
+		error = "Flight already given a rating"
+		return render_template('rate-flights.html', error=error)
+	else: 
+		error = "Ticket ID does not exist or Departure Date in the Future"
+		return render_template('rate-flights.html', error=error)
+
+@app.route('/track-spending')
+def track_spending(): 
+	username = session['username']
+	cursor = conn.cursor()
+	getCustYearlySpending = 'SELECT SUM(SoldPrice) AS spend FROM ticket NATURAL JOIN purchasedfor WHERE CustomerEmail = %s AND PurchaseDate >= CURRENT_DATE - INTERVAL 1 YEAR'
+	cursor.execute(getCustYearlySpending, (username))
+	yearSpend = cursor.fetchone()['spend']
+	getCustMonthlySpending = 'SELECT MONTHNAME(PurchaseDate) AS month, SUM(soldPrice) as spent FROM ticket NATURAL JOIN purchasedfor WHERE CustomerEmail = %s AND PurchaseDate >= CURRENT_DATE - INTERVAL 6 MONTH GROUP BY MONTHNAME(PurchaseDate)'
+	cursor.execute(getCustMonthlySpending, (username))
+	custMonthlySpending = cursor.fetchall() 
+	labels = []
+	months = {1:'January', 2: 'February', 3:'March',4:'April',5:'May',6:'June',7:'July',8:'August',9:'September',10:'October',11:'November',12:'December'}
+	from datetime import date
+	currMonth = date.today().month
+	earliest = currMonth-5
+	for i in range(earliest,currMonth+1): 
+		if i>0 and i<13: 
+			labels.append(months[i])
+		elif i < 1: 
+			i += 12
+			labels.append(months[i])
+	values = []
+	for elem in labels:
+		added = False
+		for i in range (len(custMonthlySpending)): 
+			if custMonthlySpending[i]['month'] == elem: 
+				values.append(custMonthlySpending[i]['spent'])
+				added = True
+				break
+		if added == False: 
+			values.append(0)
+	maximumValue = max(values) + 10
+	return render_template('track-spending.html', labels = labels, values = values, yearSpend = yearSpend, max = maximumValue)
+>>>>>>> 5b09f362583314169597634557b6c1fa5f87fdb6
 
 
 #Airline Staff Use Cases
@@ -424,7 +522,7 @@ def staffViewRatings():
         return
 
 
-@app.route('Airline-Staff-View-Frequent-Customers')
+@app.route('/Airline-Staff-View-Frequent-Customers')
 def staffViewFreqCustomers():
     cursor = conn.cursor()
     username = session['username']
@@ -467,7 +565,7 @@ def staffViewCustomerFlights():
         return
 
 
-@app.route('Airline-Staff-View-Reports')
+@app.route('/Airline-Staff-View-Reports')
 def staffViewReports():
     cursor = conn.cursor()
     monthReportQuery = ('SELECT COUNT(TicketID) AS totalTickets, MONTHNAME(PurchaseDate) AS Month'
