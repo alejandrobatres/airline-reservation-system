@@ -5,6 +5,7 @@ from datetime import datetime # May need this for your datetime columns/client
 import hashlib # But can use this for md5
 import re # If you want to use regex
 import json # You'll need this library to parse json objects in python
+from datetime import date
 
 # Verifies if an email is in a valid format via regex (regular expressions)
 def validateEmail(email):
@@ -203,9 +204,40 @@ def customerSearchOneWay():
     destination_airport = request.form.get['destination-airport']
     departure_date = request.form.get['departure-date']
     cursor = conn.cursor()
-    oneWayQuery = ('SELECT ')
-    #'SELECT f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, ArrivalDate, FlightStatus, COUNT(ticketID) as booked, numberOfSeats FROM flight as f LEFT JOIN purchasedfor AS p ON p.FlightNumber = f.FlightNumber AND p.DepartureDate = f.DepartureDate AND p.DepartureTime = f.DepartureTime INNER JOIN updates AS u ON u.FlightNumber = f.FlightNumber AND u.DepartureDate = f.DepartureDate AND u.DepartureTime = f.DepartureTime INNER JOIN airplane ON f.AirplaneID = airplane.AirplaneID INNER JOIN airport AS a1 ON a1.AirportName = f.DepartureAirport INNER JOIN airport AS a2 ON a2.AirportName = f.ArrivalAirport WHERE f.FlightNumber NOT IN (SELECT FlightNumber from flight as f2 GROUP BY FlightNumber HAVING COUNT(f2.FlightNumber) > 1) AND a1.AirportCity = %s AND f.DepartureAirport = %s AND a2.AirportCity = %s AND f.ArrivalAirport = %s AND f.DepartureDate = %s GROUP BY f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, ArrivalDate, FlightStatus HAVING booked < NumberOfSeats'
-	
+    oneWayQuery = ('SELECT f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, f.ArrivalDate, f.FlightStatus, f.numberOfSeats, COUNT(ticketID) as numFlights'
+                   'FROM Flight as f'
+                   'LEFT JOIN PurchasedFor AS pf'
+                   'On pf.FlightNumber = f.FlightNumber AND pf.DepartureDate = f.DepartureDate AND pf.DepartureTime = f.DepartureTime'
+                   'INNER JOIN Updates AS u'
+                   'ON u.FlightNumber = f.FlightNumber AND u.DepartureDate = f.DepartureDate AND u.DepartureTime = f.DepartueTime'
+                   'INNER JOIN Airplane'
+                   'ON f.AirplaneID = airplane.AirplaneID'
+                   'INNER JOIN Airport AS airport1'
+                   'ON airport1.AirportName = f.DepartureAirport'
+                   'INNER JOIN Airport AS airport2'
+                   'ON airport2.AirportName = f.ArrivalAirport'
+                   'WHERE f.FlightNumber NOT IN'
+                        'SELECT FlightNumber'
+                        'FROM Flight as f2'
+                        'GROUP BY FlightNumber'
+                        'HAVING COUNT(f2.FlightNumber) > 1'
+                    'AND airport1.AirportCity = %s AND f.DepartureAirport = %s AND airport2.AirportCity = %s AND f.ArrivalAirport = %s AND f.DepartureDate = %s'
+                    'GROUP BY f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, f.ArrivalDate, f.FlightStatus'
+                    'HAVING numFlights < f.NumberOfSeats')
+    
+    cursor.execute(oneWayQuery, (departure_city, departure_airport, destination_city, destination_airport, departure_date))
+    data = cursor.fetchall()
+    cursor.close()
+    today = date.today()
+    if departure_date < str(today):
+        message = 'Date is in the past'
+        data = ''
+        return render_template('Customer-Search-One-Way-Flights.html', flights = data, error = message)
+    elif (data):
+        return render_template('Customer-Search-One-Way-Flights.html', flights = data)
+    else:
+        message = "No flights available"
+        return render_template('Customer-Search-One-Way-Flights.html', flights = data, error = message)
     return
 
 
@@ -218,7 +250,26 @@ def customerSearchTwoWay():
     departure_date = request.form.get['departure-date']
     return_date = request.form.get['return-date']
     cursor = conn.cursor()
-    twoWayQuery = ('SELECT')
+    twoWayQuery = ('SELECT f.AirilneName, f.FlightNumber, f.DepartureDate, f3.DepartureDate AS returnDate, f.DepartureTime, f3.DepartureTime AS returnTime, f.ArrivalDate, f.FlightStatus, COUNT(ticketID) AS numFlights, f.numberOfSeats'
+                   'FROM Flight AS f'
+                   'LEFT JOIN PurchasedFor AS pf'
+                   'ON pf.FlightNumber = f.FlightNumber AND pf.DepartureDate = f.DepartureDATE AND pf.DepartureTime = f.DepartureTime'
+                   'INNER JOIN Updates AS u'
+                   'ON u.FlightNumber = f.FlightNumber AND u.DepartureDate = f.DepartureDate AND u.DepartureTime = f.DepartureTime'
+                   'INNER JOIN Airport AS airport1'
+                   'ON airport1.AirportName = f.DepartureAirport'
+                   'INNER JOIN Airport AS airport2'
+                   'ON airport2.AirportName = f.ArrivalAirport'
+                   'INNER JOIN Flight AS f3'
+                   'ON f.FlightNumber = f3.FlightNumber AND f.ArrivalAirport = f3.DepartureAirport'
+                   'WHERE f.FlightNumber IN'
+                        'SELECT FlightNumber'
+                        'FROM Flight AS f2'
+                        'GROUP BY FlightNumber'
+                        'HAVING COUNT(f2.FlightNumber) > 1'
+                    'AND f3.DepartureDate > f.DepartureDate AND airport1.AirportCity = %s AND f.DepartureAirport = %s AND airport2.AirportCity = %s AND f.ArrivalAirport = %s AND f.DepartureDate = %s AND f3.DepartureDate = %s'
+                    'GROUP BY f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, f.ArrivalDate, f.FlightStatus, returnDate, returnTime'
+                    'HAING numFlights < f.numberOfSeats')
     cursor.execute(twoWayQuery, (departure_city,departure_airport,destination_city,destination_airport,departure_date,return_date))
     return
 
@@ -229,8 +280,76 @@ def customerPurchaseFlight():
     departure_date = request.form.get['departure-date']
     departure_time = request.form.get['departure-time']
     cursor = conn.cursor()
-    #query = 'SELECT f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, f.BasePrice, f.ArrivalDate, f.ArrivalTime, f.ArrivalAirport, f.DepartureAirport, COUNT(ticketID)'
-    return
+    emptySeatsQuery = ('SELECT f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, f.BasePrice, f.ArrivalDate, f.ArrivalTime, f.ArrivalAirport, f.DepartureAirport, COUNT(ticketID) AS bookedSeats, f.numberOfSeats'
+                       'FROM Flight AS f'
+                       'LEFT JOIN PurchasedFor AS pf'
+                       'ON pf.FlightNumber = f.FlightNumber AND pf.DepartureDate = f.DepartureDate AND pf.DepartureTime = f.DepartureTime'
+                       'INNER JOIN Updates AS u'
+                       'ON u.FlightNumber = f.FlightNumber AND u.DepartureDate = f.DepartureDate AND u.DepartureTime = f.DepartureTime'
+                       'INNER JOIN Airplane'
+                       'ON f.AirplaneID = Airplane.AirplaneID'
+                       'INNER JOIN Airport AS airport1'
+                       'ON airport1.AirportName = f.DepartureAirport'
+                       'INNER JOIN Airport AS airport2'
+                       'ON airport2.AirportName = f.ArrivalAirport'
+                       'WHERE f.FlightNumber NOT IN'
+                            'SELECT FlightNumber from Flight AS f2'
+                            'GROUP BY FlightNumber'
+                            'HAVING COUNT(f2.FlightNumber) > 1'
+                        'AND f.DepartureDate = %s AND f.DepartureTime = %s AND f.FlightNumber = %s'
+                        'GROUP BY f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, f.ArrivalDate, f.FlightStatus'
+                        'HAVING bookedSeats < f.numberOfSeats')
+    cursor.execute(emptySeatsQuery, (departure_date, departure_time, flight_number))
+    data = cursor.fetchone()
+    airline, arrival_date, arrival_airport, departure_airport, arrival_time = data['AirlineName'], data['ArrivalDate'], data['ArrivalAirport'], data['DepartureAirport'], data['ArrivalTime']
+    totalBooked = data['booked']
+    totalSeats = data['numberOfSeats']
+    basePrice = data['BasePrice']
+    if totalBooked > totalSeats >= 0.75:
+        basePrice *= 1.25
+    round_trip = 'N/A'
+    return render_template('Customer-Purchase-Flight.html', airline = airline, flight_num = flight_number, dept_date = departure_date, dept_time = departure_time, arr_date = arrival_date, arr_time = arrival_time, arr_air = arrival_airport, dept_air = departure_airport, basePrice = basePrice, f1Price = basePrice, round_trip = round_trip)
+
+@app.route('/Customer-Purchase-Two-Way-Flight', methods = ['GET', 'POST'])
+def customerPurchaseTwoWay():
+    flight_number = request.form.get['flight-number']
+    departure_date = request.form.get['departure-date']
+    departure_time = request.form.get['departure-time']
+    return_date = request.form.get['return-date']
+    return_time = request.form.get['return-time']
+    cursor = conn.cursor()
+    emptySeatsQuery = ('SELECT f.FlightNumber, f.DepartureDate, f.DepartureTime, COUNT(ticketID) AS bookedSeats, numberOfSeats' 
+                       'FROM flight AS f' 
+                       'NATURAL JOIN airplane LEFT JOIN Purchasedfor AS pf'
+                       'ON f.DepartureDate = pf.DepartureDate AND f.DepartureTime = pf.DepartureTime AND f.FlightNumber = pf.FlightNumber' 
+                       'WHERE f.flightNumber = %s AND f.departureDate = %s AND f.departureTime = %s' 
+                       'GROUP BY f.FlightNumber, f.DepartureDate, f.DepartureTime, numberOfSeats')
+    cursor.execute(emptySeatsQuery, (flight_number, departure_date, departure_time))
+    flight1Seats = cursor.fetchone()
+    flight1SeatsBooked, flight1TotalSeats = flight1Seats['booked'], flight1Seats['numberOfSeats']
+    if flight1SeatsBooked/flight1TotalSeats == 1 or flight1Seats['DepartureDate'] < date.today():
+        error = "Flight fully booked or already left"
+        return render_template('Customer-Purchase-Flight.html', error = error)
+    cursor.execute(emptySeatsQuery, (flight_number, return_date, return_time))
+    flight2Seats = cursor.fetchone()
+    flight2SeatsBooked, flight2TotalSeats = flight2Seats['booked'], flight2Seats['numberOfSeats']
+    flightPriceQuery = ('SELECT * FROM Flight'
+                        'WHERE FlightNumber = %s AND DepartureDate = %s AND DepartureTime = %s')
+    cursor.execute(flightPriceQuery, (flight_number, departure_date, departure_time))
+    flight1Price = cursor.fetchone()
+    airline, arrival_date, arrival_time, arrival_airport = flight1Price['AirlineName'], flight1Price['ArrivalDate'], flight1Price['ArrivalTime'], flight1Price['ArrivalAirport']
+    basePrice1 = flight1Price['BasePrice']
+    cursor.execute(flightPriceQuery, (flight_number, return_date, return_time))
+    flight2Price = cursor.fetchone()
+    departure_airport = flight2Price['DepartureAirport']
+    basePrice2 = flight2Price['BasePrice']
+    if flight1SeatsBooked/flight1TotalSeats >= 0.75:
+        basePrice1 *= 1.25
+    if flight2SeatsBooked / flight2TotalSeats >= 0.75:
+        basePrice2 *= 1.25
+    totalPrice = basePrice1 + basePrice2
+    round_trip = "Returning Flight: \nReturn Date: " + str(return_date) + "\nReturn Time: " + str(return_time)
+    return render_template('Customer-Purchase-Flight.html', airline = airline, flight_num = flight_number, dept_date = departure_date, dept_time = departure_time, arr_date = arrival_date, arr_time = arrival_time, arr_air = arrival_airport, dept_air = departure_airport, baseprice = totalPrice, f1price = basePrice1, f2price = basePrice2, round_trip = round_trip)
 
 
 def customerCancelTrip():
@@ -269,26 +388,6 @@ def customerRateComment():
         return
     
     return
-
-
-@app.route('/Customer-Track-Spending')
-def customerTrackSpending():
-    username = session['username']
-    cursor = conn.cursor()
-    yearlySpendingQuery = ('SELECT SUM(SoldPrice) As Spent'
-                            'FROM TICKET NATURAL JOIN PurchasedFor'
-                            'WHERE CustomerEmail = %s AND PurchaseDate >= CURRENT_DATE - INTERVAL 1 YEAR')
-    cursor.execute(yearlySpendingQuery, (username))
-    #yearlySpend = cursor.fetchone()['spend']
-
-    monthlySpendingQuery = ('SELECT MONTHNAME(PurchaseDate) AS Month, SUM(SoldPrice) AS Spent'
-            'FROM Ticket NATURAL JOIN PurchasedFor'
-            'WHERE CustomerEmail = %s AND PurchaseDate >= CURRENT_DATE - INTERVAL 6 MONTH'
-            'GROUP BY MONTHNAME(PurchaseDate)')
-    cursor.execute(monthlySpendingQuery, (username))
-    #montlySpend = cursor.fetchall()
-
-    return render_template('Customer-Track-Spending.html')
 
 @app.route('/customer-flight-search')
 def customer_flight_search():
