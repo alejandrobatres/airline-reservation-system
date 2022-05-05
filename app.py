@@ -214,33 +214,32 @@ def customer_flight_search():
 
 @app.route('/customer-oneway-results', methods = ['GET', 'POST'])
 def customer_oneway_flight_search():
-    departure_city = request.form.get['departure-city']
-    departure_airport = request.form.get['departure-airport']
-    destination_city = request.form.get['destination-city']
-    destination_airport = request.form.get['destination-airport']
-    departure_date = request.form.get['departure-date']
+    departure_city = request.form['departure-city']
+    departure_airport = request.form['departure-airport']
+    destination_city = request.form['destination-city']
+    destination_airport = request.form['destination-airport']
+    departure_date = request.form['departure-date']
     cursor = conn.cursor()
     oneWayQuery =  """
-                   SELECT f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, f.ArrivalDate, f.FlightStatus, f.numberOfSeats, COUNT(ticketID) as numFlights
-                   FROM Flight as f
-                   LEFT JOIN PurchasedFor AS pf
-                   On pf.FlightNumber = f.FlightNumber AND pf.DepartureDate = f.DepartureDate AND pf.DepartureTime = f.DepartureTime
-                   INNER JOIN Updates AS u
-                   ON u.FlightNumber = f.FlightNumber AND u.DepartureDate = f.DepartureDate AND u.DepartureTime = f.DepartueTime
-                   INNER JOIN Airplane
-                   ON f.AirplaneID = airplane.AirplaneID
-                   INNER JOIN Airport AS airport1
-                   ON airport1.AirportName = f.DepartureAirport
-                   INNER JOIN Airport AS airport2
-                   ON airport2.AirportName = f.ArrivalAirport
-                   WHERE f.FlightNumber NOT IN
-                        SELECT FlightNumber
-                        FROM Flight as f2
-                        GROUP BY FlightNumber
-                        HAVING COUNT(f2.FlightNumber) > 1
+                    SELECT f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, ArrivalDate, FlightStatus, numberOfSeats, COUNT(ticketID) as numFlights
+                    FROM Flight as f
+                    LEFT JOIN PurchasedFor AS pf
+                    On pf.FlightNumber = f.FlightNumber AND pf.DepartureDate = f.DepartureDate AND pf.DepartureTime = f.DepartureTime
+                    INNER JOIN Updates AS u
+                    ON u.FlightNumber = f.FlightNumber AND u.DepartureDate = f.DepartureDate AND u.DepartureTime = f.DepartureTime
+                    INNER JOIN Airplane
+                    ON f.AirplaneID = airplane.AirplaneID
+                    INNER JOIN Airport AS airport1
+                    ON airport1.AirportName = f.DepartureAirport
+                    INNER JOIN Airport AS airport2
+                    ON airport2.AirportName = f.ArrivalAirport
+                    WHERE f.FlightNumber NOT IN
+                        (SELECT FlightNumber FROM Flight as f2 
+                        GROUP BY FlightNumber 
+                        HAVING COUNT(f2.FlightNumber) > 1)
                     AND airport1.AirportCity = %s AND f.DepartureAirport = %s AND airport2.AirportCity = %s AND f.ArrivalAirport = %s AND f.DepartureDate = %s
-                    GROUP BY f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, f.ArrivalDate, f.FlightStatus
-                    HAVING numFlights < f.NumberOfSeats
+                    GROUP BY f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, ArrivalDate, FlightStatus, numberOfSeats
+                    HAVING numFlights < NumberOfSeats
                    """
     cursor.execute(oneWayQuery, (departure_city, departure_airport, destination_city, destination_airport, departure_date))
     data = cursor.fetchall()
@@ -304,7 +303,7 @@ def customer_round_flight_search():
     return
 
 # purchase tickets
-@app.route('/customer-ticket-purchase', methods = ['GET', 'POST'])
+@app.route('/customer-oneway-purchase', methods = ['GET', 'POST'])
 def customer_ticket_purchase():
     flight_number = request.form.get['flight-number']
     departure_date = request.form.get['departure-date']

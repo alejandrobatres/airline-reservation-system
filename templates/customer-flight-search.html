@@ -5,7 +5,7 @@
 {% block title %}Customer Flight Search{% endblock %}
 {% block body %}
     <div class="container">
-        <h3>Flight Search</h3>
+        <h3>View Flights</h3>
         <hr>
         <div class="col-md-8 col-md-offset-2">
             <form action="/customer-oneway-results" method="POST" redirect>
@@ -33,7 +33,7 @@
                 <div class="row">
                     <div class="form-group col-md-6">
                         <label for="dep-date1">Depature Date</label>
-                        <input class="form-control" id="dep-date1" type="text" placeholder="MM/DD/YYYY" name="departure-date" required>
+                        <input class="form-control" id="dep-date1" type="date" placeholder="MM/DD/YYYY" name="departure-date" required>
                     </div>
                 </div>
                 <br>
@@ -65,11 +65,11 @@
                 <div class="row">
                     <div class="form-group col-md-6">
                         <label for="dep-date2">Departure Date</label>
-                        <input class="form-control" id="dep-date2" type="text" placeholder="MM/DD/YYYY" name="departure-date" required>
+                        <input class="form-control" id="dep-date2" type="date" placeholder="MM/DD/YYYY" name="departure-date" required>
                     </div>
                     <div class="form-group col-md-6">
                         <label for="arr-date2">Arrival Date</label>
-                        <input class="form-control" id="arr-date2" type="text" placeholder="MM/DD/YYYY" name="return-date" required>
+                        <input class="form-control" id="arr-date2" type="date" placeholder="MM/DD/YYYY" name="return-date" required>
                     </div>
                 </div>
                 <button type="submit" class="btn btn-primary btn-block">Search</button>

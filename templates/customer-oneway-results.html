@@ -1,0 +1,73 @@
+{% extends "layouts/base.html" %}
+{% block head %}
+<script src="js/main.js"></script>
+{% endblock %}
+{% block title %}Customer Flight Search{% endblock %}
+{% block body %}
+    <div class="container">
+        <h3>One-Way Ticket View</h3>
+        <hr>
+        <div class="row">
+            <div class="col-md-8">
+                <h4 class="text-center">Upcoming Flights</h4>
+                <table class="table">
+                    <colgroup>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                    </colgroup>
+                    <thread>
+                        <tr>
+                            <th>Airline</th>
+                            <th>Flight Number</th>
+                            <th>Departure Airport</th>
+                            <th>Departure Time</th>
+                            <th>Arrival Airport</th>
+                            <th>Arrival Time</th>
+                            <th>Flight Status</th>
+                        </tr>
+                    </thread>
+                    <tbody>
+                        {% for line in flights %}
+                        <tr style="height: 80px;">
+                        <td>{{line['AirlineName']}}</td>
+                        <td>{{line['FlightNumber']}}</td>
+                        <td>{{line['DepartureDate']}}</td>
+                        <td>{{line['DepartureTime']}}</td>
+                        <td>{{line['ArrivalDate']}}</td>
+                        <td>{{line['ArrivalTime']}}</td>
+                        <td>{{line['FlightStatus']}}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-md-4">
+                <form action="/customer-oneway-purchase" method="POST" redirect>
+                    <div class="row">
+                        <div class="form-group col-md-4">
+                            <label for="flight-num1">Flight Number</label>
+                            <input class="form-control" id="flight-num1" type="text" placeholder="1234" name="flight-num1" required>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="arr-city2">Arrival City</label>
+                            <input class="form-control" id="arr-city2" type="text" placeholder="Shanghai" name="destination-city" required>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="arr-air2">Arrival Airport</label>
+                            <input class="form-control" id="arr-air2" type="text" placeholder="PVG" name="destination-airport" required>
+                        </div>
+                    </div>
+                    <hr>
+                    <button type="submit" class="btn btn-primary btn-block">Select Flight</button>
+                </form>
+                <h4 class="text-center"><a href="http://127.0.0.1:5000/customer-flight-search">Back to Flight Search</a></h4>
+            </div>
+        </div>
+
+    </div>
+    {% endblock %}
