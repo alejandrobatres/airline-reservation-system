@@ -198,11 +198,11 @@ def customerSearchFlights():
 
 @app.route('/Customer-Search-One-Way-Flights', methods = ['GET', 'POST'])
 def customerSearchOneWay():
-    departure_city = request.form.get['departure-city']
-    departure_airport = request.form.get['departure-airport']
-    destination_city = request.form.get['destination-city']
-    destination_airport = request.form.get['destination-airport']
-    departure_date = request.form.get['departure-date']
+    departure_city = request.form['departure-city']
+    departure_airport = request.form['departure-airport']
+    destination_city = request.form['destination-city']
+    destination_airport = request.form['destination-airport']
+    departure_date = request.form['departure-date']
     cursor = conn.cursor()
     oneWayQuery = ('SELECT f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, f.ArrivalDate, f.FlightStatus, f.numberOfSeats, COUNT(ticketID) as numFlights'
                    'FROM Flight as f'
@@ -243,12 +243,12 @@ def customerSearchOneWay():
 
 @app.route('/Customer-Search-Two-Way-Flights', methods = ['GET', 'POST'])
 def customerSearchTwoWay():
-    departure_city = request.form.get['departure-city']
-    departure_airport = request.form.get['departure-airport']
-    destination_city = request.form.get['destination-city']
-    destination_airport = request.form.get['destination-airport']
-    departure_date = request.form.get['departure-date']
-    return_date = request.form.get['return-date']
+    departure_city = request.form['departure-city']
+    departure_airport = request.form['departure-airport']
+    destination_city = request.form['destination-city']
+    destination_airport = request.form['destination-airport']
+    departure_date = request.form['departure-date']
+    return_date = request.form['return-date']
     cursor = conn.cursor()
     twoWayQuery = ('SELECT f.AirilneName, f.FlightNumber, f.DepartureDate, f3.DepartureDate AS returnDate, f.DepartureTime, f3.DepartureTime AS returnTime, f.ArrivalDate, f.FlightStatus, COUNT(ticketID) AS numFlights, f.numberOfSeats'
                    'FROM Flight AS f'
@@ -276,9 +276,9 @@ def customerSearchTwoWay():
 
 @app.route('/Customer-Purchase-Flight', methods = ['GET', 'POST'])
 def customerPurchaseFlight():
-    flight_number = request.form.get['flight-number']
-    departure_date = request.form.get['departure-date']
-    departure_time = request.form.get['departure-time']
+    flight_number = request.form['flight-number']
+    departure_date = request.form['departure-date']
+    departure_time = request.form['departure-time']
     cursor = conn.cursor()
     emptySeatsQuery = ('SELECT f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, f.BasePrice, f.ArrivalDate, f.ArrivalTime, f.ArrivalAirport, f.DepartureAirport, COUNT(ticketID) AS bookedSeats, f.numberOfSeats'
                        'FROM Flight AS f'
@@ -312,11 +312,11 @@ def customerPurchaseFlight():
 
 @app.route('/Customer-Purchase-Two-Way-Flight', methods = ['GET', 'POST'])
 def customerPurchaseTwoWay():
-    flight_number = request.form.get['flight-number']
-    departure_date = request.form.get['departure-date']
-    departure_time = request.form.get['departure-time']
-    return_date = request.form.get['return-date']
-    return_time = request.form.get['return-time']
+    flight_number = request.form['flight-number']
+    departure_date = request.form['departure-date']
+    departure_time = request.form['departure-time']
+    return_date = request.form['return-date']
+    return_time = request.form['return-time']
     cursor = conn.cursor()
     emptySeatsQuery = ('SELECT f.FlightNumber, f.DepartureDate, f.DepartureTime, COUNT(ticketID) AS bookedSeats, numberOfSeats' 
                        'FROM flight AS f' 
@@ -355,11 +355,11 @@ def customerPurchaseTwoWay():
 def customerCardInfo():
     cursor = conn.cursor()
     username = session['username']
-    card_number = request.form.get['card-number']
-    card_type = request.form.get['card-type']
-    card_name = request.form.get['card-name']
-    expiration_month = request.form.get['card-month']
-    expiration_year = request.form.get['card-year']
+    card_number = request.form['card-number']
+    card_type = request.form['card-type']
+    card_name = request.form['card-name']
+    expiration_month = request.form['card-month']
+    expiration_year = request.form['card-year']
     card_expiration = str(expiration_month) + "/" + expiration_year
     cardExistsQuery = '''
                         SELECT *
@@ -382,7 +382,7 @@ def customerCardInfo():
 @app.route('/Customer-Cancel-Trip', methods = ['GET', 'POST'])
 def customerCancelTrip():
     customer_email = session['username']
-    customer_ticketID = request.form.get['ticket-ID']
+    customer_ticketID = request.form['ticket-ID']
     flightExistsQuery = '''
                         SELECT FlightNumber, DepartureDate
                         FROM Ticket NATURAL JOIN PurchasedFor NATURAL JOIN Customer
@@ -392,9 +392,9 @@ def customerCancelTrip():
     cursor.execute(flightExistsQuery, (customer_email, customer_ticketID))
     data = cursor.fetchone()
     if (data):
-        customer_flight_number = request.form.get['flight-number']
-        customer_departure_date = request.form.get['departure-date']
-        customer_departure_time = request.form.get['departure-time']
+        customer_flight_number = request.form['flight-number']
+        customer_departure_date = request.form['departure-date']
+        customer_departure_time = request.form['departure-time']
         cancelTripQuery = '''
                             DELETE FROM PurchasedFor
                             WHERE TicketID = %s AND FlightNumber = %s AND DepartureDate = %s AND DepartureTime = %s
@@ -410,9 +410,9 @@ def customerCancelTrip():
 @app.route('/Customer-Rate-Comment', methods = ['GET', 'POST'])
 def customerRateComment():
     CustomerEmail = session['username']
-    customer_ticket_ID = request.form.get['ticket-ID']
-    customer_rate = request.form.get['rate']
-    customer_comment = request.form.get['comment']
+    customer_ticket_ID = request.form['ticket-ID']
+    customer_rate = request.form['rate']
+    customer_comment = request.form['comment']
     cursor = conn.cursor()
     flightExistsQuery = ('SELECT FlightNumber, DepartureDate, DepartureTime'
                         'FROM Ticket NATURAL JOIN PurchasedFor NATURAL JOIN Customer'
@@ -515,6 +515,100 @@ def track_spending():
 	maximumValue = max(values) + 10
 	return render_template('track-spending.html', labels = labels, values = values, yearSpend = yearSpend, max = maximumValue)    
 
+##### staff #####
+
+# staff registration / login
+@app.route('/staff-registration', methods=['GET', 'POST'])
+def staff_registration():
+    return render_template('staff-registration.html')
+
+@app.route('/staff-registration-auth', methods=['GET', 'POST'])
+def staff_registration_auth():
+        #grabs information from the forms
+    username = request.form['username']
+    first_name = request.form['first-name']
+    last_name = request.form['last-name']
+    password = request.form['password']
+    dateOfBirth = request.form['date-of-birth']
+    airlineName = request.form['airline']
+    #cursor used to send queries
+    cursor = conn.cursor()
+    #executes query
+    noDupEmailQuery = 'SELECT Username FROM AirlineStaff WHERE Username = %s'
+    cursor.execute(noDupEmailQuery, (username))
+    #stores the results in a variable
+    data = cursor.fetchone()
+    #use fetchall() if you are expecting more than 1 data row
+    error = None
+    if(data):
+        #If the previous query returns data, then user exists
+        error = "This user already exists"
+        return render_template('staff-registration.html', error = error)
+    else:
+        #password = hashlib.md5(password.encode())
+        ins = 'INSERT INTO AirlineStaff VALUES(%s, md5(%s), %s, %s, %s, %s)'
+        cursor.execute(ins, (username, password, first_name, last_name, dateOfBirth, airlineName))
+        conn.commit()
+        cursor.close()
+        return render_template('staff-login.html')
+
+def loggedIn():
+    return len(session) > 0
+
+@app.route('/staff-login-auth',  methods=['GET', 'POST'])
+def staff_login_auth():
+    #grabs information from the forms
+    username = request.form['staff-username']
+    password = request.form['staff-password']
+
+    #cursor used to send queries
+    cursor = conn.cursor()
+    # executes query
+    query = 'SELECT Username, StaffPassword FROM AirlineStaff WHERE Username = %s and StaffPassword = md5(%s)'
+    cursor.execute(query, (username, password))
+    #stores the results in a variable
+    data = cursor.fetchone()
+
+    # use fetchall() if you are expecting more than 1 data row
+    cursor.close()
+    error = None
+
+    sessionRunning = loggedIn()
+    if (sessionRunning == True): 
+        error = 'Other users signed in. Please sign out of current session.'
+        return render_template('staff-login.html', error=error)
+
+    if(data):
+        # creates a session for the the user
+        # session is a built in
+        session['username'] = username
+
+        # query to return the name of the staff
+        cursor = conn.cursor()
+        query = 'SELECT FirstName FROM AirlineStaff WHERE Username = %s and StaffPassword = md5(%s)'
+        cursor.execute(query, (username, password))
+        name = cursor.fetchone()['FirstName']
+        cursor.close()
+
+        return render_template('staff-home.html', name = name)
+    else:
+        error = 'Invalid login or username'
+        return render_template('staff-login.html', error=error)
+
+@app.route('/staff-home')
+def staff_home():
+    # cursor used to send queries
+    cursor = conn.cursor()
+
+    username = session['username']
+
+    # query to return the name of the staff
+    query = 'SELECT Firstname FROM AirlineStaff WHERE Username = %s'
+    cursor.execute(query, (username))
+    name = cursor.fetchone()['Firstname']
+    cursor.close()
+
+    return render_template('staff-home.html', name = name)
 
 
 #Airline Staff Use Cases
@@ -538,16 +632,16 @@ def staffViewFlights():
 
 @app.route('/Airline-Staff-Create-Flights', methods=['GET', 'POST'])
 def staffCreateFlights():
-    airline_name = request.form.get['airline-name']
-    departure_date = request.form.get['departure-date']
-    departure_time = request.form.get['departure-time']
-    flight_number = request.form.get['flight-number']
-    departure_airport = request.form.get['departure-airport']
-    arrival_airport = request.form.get['arrival-airport']
-    arrival_date = request.form.get['arrival-airport']
-    arrival_time = request.form.get['arrival-time']
-    base_price = request.form.get['base-price']
-    airplane_ID = request.form.get['airplane-ID']
+    airline_name = request.form['airline-name']
+    departure_date = request.form['departure-date']
+    departure_time = request.form['departure-time']
+    flight_number = request.form['flight-number']
+    departure_airport = request.form['departure-airport']
+    arrival_airport = request.form['arrival-airport']
+    arrival_date = request.form['arrival-airport']
+    arrival_time = request.form['arrival-time']
+    base_price = request.form['base-price']
+    airplane_ID = request.form['airplane-ID']
 
     cursor = conn.cursor()
     query = ('SELECT * FROM Flight'
@@ -575,10 +669,10 @@ def staffCreateFlights():
 @app.route('/Airline-Staff-Update-Flight-Status', methods=['GET', 'POST'])
 def staffUpdateFlightStatus():
     username = session['username']
-    flight_number = request.form.get['flight-number']
-    departure_date = request.form.get['departure-date']
-    departure_time = request.form.get['departure-time']
-    flight_status = request.form.get['flight-status']
+    flight_number = request.form['flight-number']
+    departure_date = request.form['departure-date']
+    departure_time = request.form['departure-time']
+    flight_status = request.form['flight-status']
     
     cursor = conn.cursor()
     query = ('SELECT * FROM Changes '
@@ -601,11 +695,11 @@ def staffUpdateFlightStatus():
 
 @app.route('/Airline-Staff-Add-Airplane', methods=['GET', 'POST'])
 def staffAddAirplane():
-    airline_name = request.form.get['airline-name']
-    airplane_id = request.form.get['airplane-ID']
-    num_seats = request.form.get['num-seats']
-    airplane_company = request.form.get['airplane_company']
-    airplane_age = request.form.get['airplane_age']
+    airline_name = request.form['airline-name']
+    airplane_id = request.form['airplane-ID']
+    num_seats = request.form['num-seats']
+    airplane_company = request.form['airplane_company']
+    airplane_age = request.form['airplane_age']
 
     cursor = conn.cursor()
     query = ('SELECT * FROM Airplane'
@@ -628,11 +722,11 @@ def staffAddAirplane():
 
 @app.route('/Airline-Staff-Add-Airport', methods=['GET', 'POST'])
 def staffAddAirport():
-    airport_code = request.form.get['airport_code']
-    airport_name = request.form.get['airport_code']
-    airport_city = request.form.get['airport_city']
-    airport_country = request.form.get['airport_country']
-    airport_type = request.form.get['airport_type']
+    airport_code = request.form['airport_code']
+    airport_name = request.form['airport_code']
+    airport_city = request.form['airport_city']
+    airport_country = request.form['airport_country']
+    airport_type = request.form['airport_type']
 
     cursor = conn.cursor()
     query = ('SELECT * FROM Airport'
@@ -651,9 +745,9 @@ def staffAddAirport():
 
 @app.route('/Airline-Staff-View-Ratings', methods = ['GET', 'POST'])
 def staffViewRatings():
-    flight_number = request.form.get['flight-number']
-    departure_date = request.form.get['departure-date']
-    departure_time = request.form.get['departure-time']
+    flight_number = request.form['flight-number']
+    departure_date = request.form['departure-date']
+    departure_time = request.form['departure-time']
     cursor = conn.cursor()
     query = ('SELECT CustomerComment, Rate FROM Suggested'
             'WHERE FlightNumber = %s AND DepartureDate = %s AND DepartureTime = %s')
@@ -690,7 +784,7 @@ def staffViewFreqCustomers():
 
 @app.route('/Airline-Staff-View-Customer-Flights', methods = ['GET', 'POST'])
 def staffViewCustomerFlights():
-    customer_email = request.form.get['customer-email']
+    customer_email = request.form['customer-email']
     cursor = conn.cursor()
     username = session['username']
     airlineQuery = ('SELECT AirlineName'
