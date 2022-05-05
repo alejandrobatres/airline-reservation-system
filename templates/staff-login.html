@@ -5,6 +5,25 @@
 {% block title %}Staff Login{% endblock %}
 {% block body %}
     <div class="container">
-   
+        <h3>Staff Login</h3>
+        <hr>
+        <div class="col-md-4 col-md-offset-4">
+            <form action="/staff-login-auth" method="POST" redirect>
+                <div class="form-group">
+                    <label for="staff-username-login">Username</label>
+                    <input class="form-control" id="staff-username-login" type="text" placeholder="Joe123" name="staff-username" required>
+                </div>
+                <div class="form-group">
+                    <label for="staff-password-login">Password</label>
+                    <input class="form-control" id="staff-passsword-login" type="password" placeholder="abc123" name="staff-password" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Submit</button>
+                {% if error %}
+                <p class="error"><strong>Error:</strong> {{error}}</p>
+            {% endif %}
+            </form>
+            <hr>
+            <h4 class="text-center"><a href="http://127.0.0.1:5000">Return Home</a></h4>
+        </div>
     </div>
 {% endblock %}
