@@ -1,0 +1,21 @@
+{% extends "layouts/base.html" %}
+{% block head %}
+<script src="js/main.js"></script>
+{% endblock %}
+{% block title %}Customer Homepage{% endblock %}
+{% block body %}
+    <div class="container">
+        <div class="row">
+            <div class="container">
+                <h3>Welcome {{ name }}</h3>
+                <h4><a href="http://127.0.0.1:5000/logout">Log out</a></h4>
+            </div>
+        </div>
+        <hr>
+        <h2><a href="http://127.0.0.1:5000/staff-flight-view">Flight Search 🔎</a></h2>
+        <h1>What would you like to do today?</h1>
+        <h3><a href="http://127.0.0.1:5000/staff-create-flight">Create Flights</a></h3>
+        <h3><a href="http://127.0.0.1:5000/rate-flights">Change Flight Status</a></h3>
+        <h3><a href="http://127.0.0.1:5000/track-spending">Track Spending</a></h3>
+    </div>
+{% endblock %}
