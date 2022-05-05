@@ -351,10 +351,60 @@ def customerPurchaseTwoWay():
     round_trip = "Returning Flight: \nReturn Date: " + str(return_date) + "\nReturn Time: " + str(return_time)
     return render_template('Customer-Purchase-Flight.html', airline = airline, flight_num = flight_number, dept_date = departure_date, dept_time = departure_time, arr_date = arrival_date, arr_time = arrival_time, arr_air = arrival_airport, dept_air = departure_airport, baseprice = totalPrice, f1price = basePrice1, f2price = basePrice2, round_trip = round_trip)
 
+@app.route('Customer-Card-Info', methods = ['GET', 'POST'])
+def customerCardInfo():
+    cursor = conn.cursor()
+    username = session['username']
+    card_number = request.form.get['card-number']
+    card_type = request.form.get['card-type']
+    card_name = request.form.get['card-name']
+    expiration_month = request.form.get['card-month']
+    expiration_year = request.form.get['card-year']
+    card_expiration = str(expiration_month) + "/" + expiration_year
+    cardExistsQuery = '''
+                        SELECT *
+                        FROM CardInfo
+                        WHERE CardNumber = %s
+                      '''
+    cursor.execute(cardExistsQuery, (card_number))
+    data = cursor.fetchone()
+    if (data):
+        print('Card already exists.')
+    else:
+        cardQuery = 'INSERT INTO CardInfo VALUES(%s, %s, %s, %s)'
+        cursor.execute(cardQuery, (card_number, card_type, card_name, card_expiration))
+        usesQuery = 'INSERT INTO Uses VALUES(%s, %s)'
+        cursor.execute(usesQuery, (card_number, username))
+        return render_template('Customer-Card-Info.html')
 
+
+
+@app.route('/Customer-Cancel-Trip', methods = ['GET', 'POST'])
 def customerCancelTrip():
     customer_email = session['username']
-    return
+    customer_ticketID = request.form.get['ticket-ID']
+    flightExistsQuery = '''
+                        SELECT FlightNumber, DepartureDate
+                        FROM Ticket NATURAL JOIN PurchasedFor NATURAL JOIN Customer
+                        WHERE CustomerEmail = %s AND TicketID = %s AND (CURRENT_DATE < DepartureDate - INTERVAL 1 DAY)
+                        '''
+    cursor = conn.cursor()
+    cursor.execute(flightExistsQuery, (customer_email, customer_ticketID))
+    data = cursor.fetchone()
+    if (data):
+        customer_flight_number = request.form.get['flight-number']
+        customer_departure_date = request.form.get['departure-date']
+        customer_departure_time = request.form.get['departure-time']
+        cancelTripQuery = '''
+                            DELETE FROM PurchasedFor
+                            WHERE TicketID = %s AND FlightNumber = %s AND DepartureDate = %s AND DepartureTime = %s
+                          '''
+        cursor.execute(cancelTripQuery, (customer_ticketID, customer_flight_number, customer_departure_date, customer_departure_time))
+        conn.commit()
+        cursor.close()
+        return render_template('Customer-Cancel-Trip.html')
+    else:
+        return
 
 
 @app.route('/Customer-Rate-Comment', methods = ['GET', 'POST'])
