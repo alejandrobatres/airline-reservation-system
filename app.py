@@ -269,7 +269,7 @@ def customerSearchTwoWay():
                         'HAVING COUNT(f2.FlightNumber) > 1'
                     'AND f3.DepartureDate > f.DepartureDate AND airport1.AirportCity = %s AND f.DepartureAirport = %s AND airport2.AirportCity = %s AND f.ArrivalAirport = %s AND f.DepartureDate = %s AND f3.DepartureDate = %s'
                     'GROUP BY f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, f.ArrivalDate, f.FlightStatus, returnDate, returnTime'
-                    'HAING numFlights < f.numberOfSeats')
+                    'HAVING numFlights < f.numberOfSeats')
     cursor.execute(twoWayQuery, (departure_city,departure_airport,destination_city,destination_airport,departure_date,return_date))
     return
 
@@ -421,7 +421,7 @@ def customerRateComment():
     data = cursor.fetchone()
     noRatingCommentQuery = ('SELECT FlightNumber, DepartureDate, DepartureTime, TicketID'
                             'FROM Suggested NATURAL JOIN Ticket'
-                            'WHERE CuustomerEmail = %s AND TicketID = %s')
+                            'WHERE CustomerEmail = %s AND TicketID = %s')
     cursor.execute(noRatingCommentQuery, (CustomerEmail, customer_ticket_ID))
     data1 = cursor.fetchone()
 
