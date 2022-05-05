@@ -4,20 +4,24 @@
 {% endblock %}
 {% block title %}Flight Application{% endblock %}
 {% block body %}
-    <div class="container">
-        <h1>Flight Application Homepage!</h1>
-        <p>Great session or not?</p>
-        <a href="http://127.0.0.1:5000/view-flights">View Flights</a>
+    <div class="wrapper">
+      <div class="container">
+        <h3>Flight Application <small>by Alejandro Batres & Devin Zhu</small></h3>
+        <hr>
+        <h3>
+          <a href="http://127.0.0.1:5000/public-flight-view">View Flights ✈️</a>
+        </h3>
+      </div>
+      <div class="container">
+        <h3>Book a Flight</h3>
+        <h4><a href="http://127.0.0.1:5000/customer-registration">Sign up</a></h4>
+        <h4><a href="http://127.0.0.1:5000/customer-login">Log in</a></h4>
+      </div>
+      <div class="container">
+        <h3>Airline Staff Portal</h3>
+          <h4><a href="http://127.0.0.1:5000/staff-registration">Sign up</a></h4>
+          <h4><a href="http://127.0.0.1:5000/staff-login">Log in</a></h4>
+      </div>
     </div>
-    <div class="container">
-      <h1>Start booking a flight!</h1>
-      <a href="http://127.0.0.1:5000/customer-registration">Register here</a>
-      <a href="http://127.0.0.1:5000/customer-login">Log in</a>
-    </div>
-    <div class="container">
-      <h1>Airline Staff</h1>
-        <a href="http://127.0.0.1:5000/staff-registration">Register here</a>
-        <a href="http://127.0.0.1:5000/staff-login">Log in</a>
-      </h1>
-    </div>
+
 {% endblock %}

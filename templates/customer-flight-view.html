@@ -1,0 +1,49 @@
+{% extends "layouts/base.html" %}
+{% block head %}
+<script src="js/main.js"></script>
+{% endblock %}
+{% block title %}Customer View Flights{% endblock %}
+{% block body %}
+    <div class="container">
+        <h2 class="text-center">Upcoming Flights</h2>
+        <div class="col-md-8 col-md-offset-2">
+            <table class="table">
+                <colgroup>
+                    <col>
+                    <col>
+                    <col>
+                    <col>
+                    <col>
+                    <col>
+                    <col>
+                </colgroup>
+                <thread>
+                    <tr>
+                        <th>Airline</th>
+                        <th>Flight Number</th>
+                        <th>Departure Airport</th>
+                        <th>Departure Time</th>
+                        <th>Arrival Airport</th>
+                        <th>Arrival Time</th>
+                        <th>Flight Status</th>
+                    </tr>
+                </thread>
+                <tbody>
+                    {% for line in flights %}
+                    <tr style="height: 80px;">
+                      <td>{{line['AirlineName']}}</td>
+                      <td>{{line['FlightNumber']}}</td>
+                      <td>{{line['DepartureDate']}}</td>
+                      <td>{{line['DepartureTime']}}</td>
+                      <td>{{line['ArrivalDate']}}</td>
+                      <td>{{line['ArrivalTime']}}</td>
+                      <td>{{line['FlightStatus']}}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+            </table>
+            <h4 class="text-center"><a href="http://127.0.0.1:5000/customer-past-flight-view">Past Flights</a></h4>
+            <h4 class="text-center"><a href="http://127.0.0.1:5000/customer-home">Return Home</a></h4>
+        </div>
+    </div>
+{% endblock %}

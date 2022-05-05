@@ -5,25 +5,17 @@
 {% block title %}Customer Homepage{% endblock %}
 {% block body %}
     <div class="container">
-        <h1>Welcome {{ name }},</h1>
-        <h2>What would you like to do today?</h2>
-        <div class="container">
-            <a href="http//127.0.0.1:5000/customer-view-flights">View my flights</a>
+        <div class="row">
+            <div class="container">
+                <h3>Welcome {{ name }}</h3>
+                <h4><a href="http://127.0.0.1:5000/logout">Log out</a></h4>
+            </div>
         </div>
-        <div class="container">
-            <a href="http//127.0.0.1:5000/customer-view-past-flights">View my past flights</a>
-        </div>
-        <div class="container">
-            <a href="http//127.0.0.1:5000/customer-flight-search">Flight Search</a>
-        </div>
-        <div class="container">
-            <a href="http://127.0.0.1:5000/rate-flights">Rate my flights</a>
-        </div>
-        <div class="container">
-            <a href="http://127.0.0.1:5000/track-spending">Track my spending</a>
-        </div>
-        <div class="container">
-            <a href="http://127.0.0.1:5000/logout">Log out</a>
-        </div>
+        <hr>
+        <h2><a href="http://127.0.0.1:5000/customer-flight-search">Flight Search 🔎</a></h2>
+        <h1>What would you like to do today?</h1>
+        <h3><a href="http://127.0.0.1:5000/customer-flight-view">My Flights</a></h3>
+        <h3><a href="http://127.0.0.1:5000/rate-flights">Rate/Comment</a></h3>
+        <h3><a href="http://127.0.0.1:5000/track-spending">Track Spending</a></h3>
     </div>
 {% endblock %}

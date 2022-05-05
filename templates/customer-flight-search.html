@@ -1,0 +1,81 @@
+{% extends "layouts/base.html" %}
+{% block head %}
+<script src="js/main.js"></script>
+{% endblock %}
+{% block title %}Customer Flight Search{% endblock %}
+{% block body %}
+    <div class="container">
+        <h3>Flight Search</h3>
+        <hr>
+        <div class="col-md-8 col-md-offset-2">
+            <form action="/customer-oneway-results" method="POST" redirect>
+                <h2 class="text-center">One-Way Trips</h2>
+                <div class="row">
+                    <div class="form-group col-md-6">
+                        <label for="dep-city1">Departure City</label>
+                        <input class="form-control" id="dep-city1" type="text" placeholder="NYC" name="departure-city" required>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="dep-air1">Departure Airport</label>
+                        <input class="form-control" id="dep-air1" type="text" placeholder="JFK" name="departure-airport" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group col-md-6">
+                        <label for="arr-city1">Arrival City</label>
+                        <input class="form-control" id="arr-city1" type="text" placeholder="Shanghai" name="destination-city" required>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="arr-air1">Arrival Airport</label>
+                        <input class="form-control" id="arr-air1" type="text" placeholder="PVG" name="destination-airport" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group col-md-6">
+                        <label for="dep-date1">Depature Date</label>
+                        <input class="form-control" id="dep-date1" type="text" placeholder="MM/DD/YYYY" name="departure-date" required>
+                    </div>
+                </div>
+                <br>
+                <button type="submit" class="btn btn-primary btn-block">Search</button>
+            </form>
+            <hr>
+            <form action="/customer-round-results" method="POST" redirect>
+                <h2 class="text-center">Round Trips</h2>
+                <div class="row">
+                <div class="form-group col-md-6">
+                    <label for="dep-city2">Departure City</label>
+                    <input class="form-control" id="dep-city2" type="text" placeholder="NYC" name="departure-city" required>
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="dep-air2">Departure Airport</label>
+                    <input class="form-control" id="dep-air2" type="text" placeholder="JFK" name="departure-airport" required>
+                </div>
+                </div>
+                <div class="row">
+                    <div class="form-group col-md-6">
+                        <label for="arr-city2">Arrival City</label>
+                        <input class="form-control" id="arr-city2" type="text" placeholder="Shanghai" name="destination-city" required>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="arr-air2">Arrival Airport</label>
+                        <input class="form-control" id="arr-air2" type="text" placeholder="PVG" name="destination-airport" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group col-md-6">
+                        <label for="dep-date2">Departure Date</label>
+                        <input class="form-control" id="dep-date2" type="text" placeholder="MM/DD/YYYY" name="departure-date" required>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="arr-date2">Arrival Date</label>
+                        <input class="form-control" id="arr-date2" type="text" placeholder="MM/DD/YYYY" name="return-date" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Search</button>
+            </form>
+            <hr>
+            <h4 class="text-center"><a href="http://127.0.0.1:5000/customer-home">Return Home</a></h4>
+        </div>
+    </div>
+{% endblock %}
