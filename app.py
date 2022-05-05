@@ -695,13 +695,37 @@ def staffViewReports():
                         'WHERE PurchaseDate >= CURRENT_DATE - INTERVAL 1 MONTH GROUP BY Month')
     cursor.execute(monthReportQuery)
     lastMonth = cursor.fetchone()
+    labels, values = [lastMonth['month']], [lastMonth['tickets']]
 
     yearReportQuery = ('SELECT COUNT(TicketID) AS totalTickets, MONTHNAME(PurchaseDate) AS Month'
                         'FROM Ticket' 
                         'WHERE PurchaseDate >= CURRENT_DATE - INTERVAL 1 YEAR GROUP BY Month')
     cursor.execute(yearReportQuery)
     lastYear = cursor.fetchall()
-    return render_template('Airline-Staff-View-Reports.html')
+    months = {1:'January', 2: 'February', 3:'March',4:'April',5:'May',6:'June',7:'July',8:'August',9:'September',10:'October',11:'November',12:'December'}
+
+    currentMonth = date.today().month
+    earliest = currentMonth - 12
+    labels1 = []
+    for i in range(earliest,currentMonth):
+        if i > 0 and i < 13:
+            labels1.append(months[i])
+        elif i < 1: 
+            i += 12
+            labels1.append(months[i])
+    values1 = []
+    for item in labels1:
+        added = False
+        for i in range(len(lastYear)):
+            if lastYear[i]['month'] == item:
+                values1.append(lastYear[i]['tickets'])
+                added = True
+                break
+        if added == False:
+            values1.append(0)
+    maxValue = max(values1) + 1
+
+    return render_template('Airline-Staff-View-Reports.html', labels = labels, values = values, labels1 = labels1, values1 = values1, max = 10, max1 = maxValue)
 
 @app.route('/Airline-Staff-View-Revenue')
 def staffViewRevenue():
