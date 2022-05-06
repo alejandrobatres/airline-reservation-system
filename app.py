@@ -638,7 +638,7 @@ def staff_create_flight():
         cursor.close()
         return render_template()            #need a new template here
 
-@app.route('/Airline-Staff-Update-Flight-Status', methods=['GET', 'POST'])
+@app.route('/staff-Update-Flight-Status', methods=['GET', 'POST'])
 def staffUpdateFlightStatus():
     username = session['username']
     flight_number = request.form['flight-number']
@@ -664,14 +664,17 @@ def staffUpdateFlightStatus():
         #flight does not exist
         return
 
+@app.route('/staff-add-airplane')
+def staff_add_airplane():
+    render_template('staff-add-airplane.html')
 
-@app.route('/Airline-Staff-Add-Airplane', methods=['GET', 'POST'])
-def staffAddAirplane():
+@app.route('/staff-add-airplane-auth', methods=['GET', 'POST'])
+def staff_add_airplane_auth():
     airline_name = request.form['airline-name']
     airplane_id = request.form['airplane-ID']
     num_seats = request.form['num-seats']
-    airplane_company = request.form['airplane_company']
-    airplane_age = request.form['airplane_age']
+    airplane_company = request.form['airplane-company']
+    airplane_age = request.form['airplane-age']
 
     cursor = conn.cursor()
     query = ('SELECT * FROM Airplane'
@@ -692,13 +695,17 @@ def staffAddAirplane():
         cursor.close()
         return render_template()        #need a new template here
 
-@app.route('/Airline-Staff-Add-Airport', methods=['GET', 'POST'])
-def staffAddAirport():
-    airport_code = request.form['airport_code']
-    airport_name = request.form['airport_code']
-    airport_city = request.form['airport_city']
-    airport_country = request.form['airport_country']
-    airport_type = request.form['airport_type']
+@app.route('/staff-add-airport')
+def staff_add_airport():
+    render_template('staff-add-airport.html')
+
+@app.route('/staff-add-airport-auth', methods=['GET', 'POST'])
+def staff_add_airport_auth():
+    airport_code = request.form['airport-code']
+    airport_name = request.form['airport-name']
+    airport_city = request.form['airport-city']
+    airport_country = request.form['airport-country']
+    airport_type = request.form['airport-type']
 
     cursor = conn.cursor()
     query = ('SELECT * FROM Airport'
@@ -715,7 +722,7 @@ def staffAddAirport():
         return
 
 
-@app.route('/Airline-Staff-View-Ratings', methods = ['GET', 'POST'])
+@app.route('/staff-view-Ratings', methods = ['GET', 'POST'])
 def staffViewRatings():
     flight_number = request.form['flight-number']
     departure_date = request.form['departure-date']
@@ -727,12 +734,12 @@ def staffViewRatings():
     data = cursor.fetchall()
 
     if (data):
-        return render_template('Airline-Staff-View-Ratings.html', flights= data, flight_number = flight_number, date = departure_date, time = departure_time)
+        return render_template('staff-view-Ratings.html', flights= data, flight_number = flight_number, date = departure_date, time = departure_time)
     
     else: 
         return
 
-@app.route('/Airline-Staff-View-Frequent-Customers')
+@app.route('/staff-view-Frequent-Customers')
 def staffViewFreqCustomers():
     cursor = conn.cursor()
     username = session['username']
@@ -751,9 +758,9 @@ def staffViewFreqCustomers():
     cursor.execute(queryYear, (airline_name))
     mostFrequentCustomer = cursor.fetchone()
     cursor.close()
-    return render_template('Airline-Staff-View-Frequency-Customers.html', mostFrequentCustomer = mostFrequentCustomer)
+    return render_template('staff-view-Frequency-Customers.html', mostFrequentCustomer = mostFrequentCustomer)
 
-@app.route('/Airline-Staff-View-Customer-Flights', methods = ['GET', 'POST'])
+@app.route('/staff-view-Customer-Flights', methods = ['GET', 'POST'])
 def staffViewCustomerFlights():
     customer_email = request.form['customer-email']
     cursor = conn.cursor()
@@ -770,12 +777,12 @@ def staffViewCustomerFlights():
     customerFlights = cursor.fetchall()
     cursor.close()
     if customerFlights:
-        return render_template('Airline-Staff-View-Customer-Flights.html', customerFlights = customerFlights, customer_email = customer_email)
+        return render_template('staff-view-Customer-Flights.html', customerFlights = customerFlights, customer_email = customer_email)
     else: #no customer flights found
         return
 
 
-@app.route('/Airline-Staff-View-Reports')
+@app.route('/staff-view-Reports')
 def staffViewReports():
     cursor = conn.cursor()
     monthReportQuery = ('SELECT COUNT(TicketID) AS totalTickets, MONTHNAME(PurchaseDate) AS Month'
@@ -813,9 +820,9 @@ def staffViewReports():
             values1.append(0)
     maxValue = max(values1) + 1
 
-    return render_template('Airline-Staff-View-Reports.html', labels = labels, values = values, labels1 = labels1, values1 = values1, max = 10, max1 = maxValue)
+    return render_template('staff-View-Reports.html', labels = labels, values = values, labels1 = labels1, values1 = values1, max = 10, max1 = maxValue)
 
-@app.route('/Airline-Staff-View-Revenue')
+@app.route('/staff-View-Revenue')
 def staffViewRevenue():
     cursor = conn.cursor()
     monthlyRevenueQuery = ('SELECT SUM(SoldPrice) AS Sale'
@@ -830,10 +837,10 @@ def staffViewRevenue():
     cursor.execute(annualRevenueQuery)
     yearSales = cursor.fetchall()
 
-    return render_template('Airline-Staff-Compare-Revenue.html', monthSales = monthSales, yearSales = yearSales)
+    return render_template('staff-Compare-Revenue.html', monthSales = monthSales, yearSales = yearSales)
 
 
-@app.route('/Airline-Staff-View-Revenue-Travel-Class')
+@app.route('/staff-View-Revenue-Travel-Class')
 def staffViewRevenueTravelClass():
     cursor = conn.cursor()
     classRevenueQuery = ('SELECT Sum(SoldPrice) AS Sale'
@@ -842,9 +849,9 @@ def staffViewRevenueTravelClass():
                          'GROUP BY TravelClass')
     cursor.execute(classRevenueQuery)
 
-    return render_template('Airline-Staff-View-Revenue-Travel-Class.html')
+    return render_template('staff-View-Revenue-Travel-Class.html')
 
-@app.route('/Airline-Staff-View-Top-Destinations')
+@app.route('/staff-view-Top-Destinations')
 def staffViewTopDestinations():
     username = session['username']
     cursor = conn.cursor()
@@ -882,7 +889,7 @@ def staffViewTopDestinations():
     conn.commit()
     cursor.close()
 
-    return render_template('Airline-Staff-View-Top-Destination.html')
+    return render_template('staff-view-Top-Destination.html')
 
 
 

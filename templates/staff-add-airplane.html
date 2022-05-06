@@ -1,0 +1,44 @@
+{% extends "layouts/base.html" %}
+{% block head %}
+<script src="js/main.js"></script>
+{% endblock %}
+{% block title %}Add Airplane{% endblock %}
+{% block body %}
+    <div class="container">
+        <h3>Add Airplane</h3>
+        <hr>
+        <div class="col-md-6 col-md-offset-3">
+            {% if error %}
+            <div class="alert alert-danger">{{error}}</div>
+            {% elif success %}
+            <div class="alert alert-success">{{success}}</div>
+            {% endif %}
+            <form action="/staff-add-airplane-auth" method="POST" redirect>
+                <div class="form-group">
+                    <label for="airline-name1">Airline Name</label>
+                    <input class="form-control" id="airline-name1" type="text" placeholder="JFK" name="airline-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="airplane-id1">Airplane ID</label>
+                    <input class="form-control" id="airplane-id1" type="text" placeholder="1" name="airplane-ID" required>
+                </div>
+                <div class="form-group">
+                    <label for="num-seats1">Number of Seats</label>
+                    <input class="form-control" id="num-seats1" type="text" placeholder="55" name="num-seats" required>
+                </div>
+                <div class="form-group">
+                    <label for="airplane-company1">Airplane Company</label>
+                    <input class="form-control" id="airplane-company1" type="text" placeholder="55" name="airplane-company" required>
+                </div>
+                <div class="form-group">
+                    <label for="airplane-age1">Airplane Age</label>
+                    <input class="form-control" id="airplane-age1" type="text" placeholder="55" name="airplane-age" required>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary btn-block">Submit</button>
+                    <h4><a href="http://127.0.0.1:5000/staff-home">Return Home</a></h4>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
