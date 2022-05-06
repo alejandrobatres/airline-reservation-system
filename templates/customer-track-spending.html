@@ -1,0 +1,77 @@
+{% extends "layouts/base.html" %}
+{% block head %}
+<script src="js/main.js"></script>
+{% endblock %}
+{% block title %}Tracking Spending{% endblock %}
+{% block body %}
+    <div class="container">
+        <h3>Yearly Spending: ${{yearSpend}}</h3>
+        <h3>{{ title }}</h3>
+        <h4>Amount Spent by Month for the Last 6 Months</h4>
+        <hr>
+        <div class="col-md-6 col-offset-md-3">
+            <canvas id="chart1" width="600" height="400"></canvas>
+            <script>
+              // bar chart data
+              var barData = {
+                labels : [
+                  {% for item in labels %}
+                   "{{ item }}",
+                  {% endfor %}
+                ],
+        
+                datasets : [{
+                  fillColor: "rgba(151,187,205,0.2)",
+                  strokeColor: "rgba(151,187,205,1)",
+                  pointColor: "rgba(151,187,205,1)",
+                  data : [
+                    {% for item in values %}
+                       "{{ item }}",
+                      {% endfor %}
+                ]
+                  }
+                ]
+              }
+        
+             // get bar chart canvas
+             var mychart1 = document.getElementById("chart1").getContext("2d");
+        
+               steps = 10
+               max = {{max}}
+        
+             // draw bar chart
+             new Chart(mychart1).Bar(barData, {
+               scaleOverride: true,
+               scaleSteps: steps,
+               scaleStepWidth: Math.ceil(max / steps),
+               scaleStartValue: 0,
+               scaleShowVerticalLines: true,
+               scaleShowGridLines : true,
+               barShowStroke : true,
+               scaleShowLabels: true
+               }
+             );
+        
+            </script>
+        </div>
+        <div class="col-md-6 col-md-offset-3">
+            <form action="/customer-track-spending-limits" method="POST">
+                <div class="form-group">
+                    <label for="start-date1">Start Date</label>
+                    <input class="form-control" type="date" id="end-date1" name="start-date1" placeholder="start date" required/>
+                </div>
+                <div class="form-group">
+                    <label for="end-date1">Start Date</label>
+                    <input class="form-control" type="date" id="end-date1" name="end-date1" placeholder="end date" required/>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Submit</button>
+                {% if error %}
+                    <p class="error"><strong>Error:</strong> {{error}}</p>
+                {% endif %}
+            </form>
+        <hr>
+        <h4 class="text-center"><a href="http://127.0.0.1:5000/customer-home">Return Home</a></h4>
+        </div>
+
+    </div>
+{% endblock %}

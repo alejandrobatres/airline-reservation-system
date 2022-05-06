@@ -307,51 +307,33 @@ def customer_round_flight_search():
     return
 
 # purchase tickets
-@app.route('/customer-oneway-purchase', methods = ['GET', 'POST'])
+@app.route('/customer-purchase-ticket', methods = ['GET', 'POST'])
 def customer_ticket_purchase():
     flight_number = request.form['flight-number']
-    departure_date = request.form['departure-date']
-    departure_time = request.form['departure-time']
+    dept_date = request.form['departure-date']
+    dept_time = request.form['departure-time']
     cursor = conn.cursor()
-    emptySeatsQuery =   """
-                        SELECT f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, f.BasePrice, f.ArrivalDate, f.ArrivalTime, f.ArrivalAirport, f.DepartureAirport, COUNT(ticketID) AS bookedSeats, f.numberOfSeats
-                        FROM Flight AS f
-                        LEFT JOIN PurchasedFor AS pf
-                        ON pf.FlightNumber = f.FlightNumber AND pf.DepartureDate = f.DepartureDate AND pf.DepartureTime = f.DepartureTime
-                        INNER JOIN Updates AS u
-                        ON u.FlightNumber = f.FlightNumber AND u.DepartureDate = f.DepartureDate AND u.DepartureTime = f.DepartureTime
-                        INNER JOIN Airplane
-                        ON f.AirplaneID = Airplane.AirplaneID
-                        INNER JOIN Airport AS airport1
-                        ON airport1.AirportName = f.DepartureAirport
-                        INNER JOIN Airport AS airport2
-                        ON airport2.AirportName = f.ArrivalAirport
-                        WHERE f.FlightNumber NOT IN
-                                SELECT FlightNumber from Flight AS f2
-                                GROUP BY FlightNumber
-                                HAVING COUNT(f2.FlightNumber) > 1
-                            AND f.DepartureDate = %s AND f.DepartureTime = %s AND f.FlightNumber = %s
-                            GROUP BY f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, f.ArrivalDate, f.FlightStatus
-                            HAVING bookedSeats < f.numberOfSeats
-                        """
-    cursor.execute(emptySeatsQuery, (departure_date, departure_time, flight_number))
+    checkFlightHasSeats = 'SELECT f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, f.BasePrice, f.ArrivalDate, f.ArrivalTime, f.ArrivalAirport, f.DepartureAirport, COUNT(ticketID) as booked, numberOfSeats FROM flight as f LEFT JOIN purchasedfor AS p ON p.FlightNumber = f.FlightNumber AND p.DepartureDate = f.DepartureDate AND p.DepartureTime = f.DepartureTime INNER JOIN updates AS u ON u.FlightNumber = f.FlightNumber AND u.DepartureDate = f.DepartureDate AND u.DepartureTime = f.DepartureTime INNER JOIN airplane ON f.AirplaneID = airplane.AirplaneID INNER JOIN airport AS a1 ON a1.AirportName = f.DepartureAirport INNER JOIN airport AS a2 ON a2.AirportName = f.ArrivalAirport WHERE f.FlightNumber NOT IN (SELECT FlightNumber from flight as f2 GROUP BY FlightNumber HAVING COUNT(f2.FlightNumber) > 1) AND f.DepartureDate = %s AND f.DepartureTime = %s AND f.FlightNumber = %s GROUP BY f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, ArrivalDate, FlightStatus HAVING booked < NumberOfSeats'
+    cursor.execute(checkFlightHasSeats, (dept_date, dept_time, flight_number))
     data = cursor.fetchone()
-    airline, arrival_date, arrival_airport, departure_airport, arrival_time = data['AirlineName'], data['ArrivalDate'], data['ArrivalAirport'], data['DepartureAirport'], data['ArrivalTime']
+    print(request.form)
+    print(data)
+    airline, arrival_date, arrival_airport, dept_air, arr_time = data['AirlineName'], data['ArrivalDate'], data['ArrivalAirport'], data['DepartureAirport'], data['ArrivalTime']
     totalBooked = data['booked']
     totalSeats = data['numberOfSeats']
     basePrice = data['BasePrice']
-    if totalBooked > totalSeats >= 0.75:
-        basePrice *= 1.25
-    round_trip = 'N/A'
-    return render_template('customer-ticket-purchase.html', airline = airline, flight_num = flight_number, dept_date = departure_date, dept_time = departure_time, arr_date = arrival_date, arr_time = arrival_time, arr_air = arrival_airport, dept_air = departure_airport, basePrice = basePrice, f1Price = basePrice, round_trip = round_trip)
+    if totalBooked/totalSeats >= 0.7: 
+        basePrice *= 1.2 
+    round_trip = "N/A"
+    return render_template('customer-purchase-tickets.html', airline = airline, flight_num = flight_number, dept_date = dept_date, dept_time = dept_time, arr_date = arrival_date, arr_time = arr_time, arr_air = arrival_airport, dept_air = dept_air, baseprice = basePrice, f1price = basePrice, round_trip = round_trip, bookingAgent = "NULL")
 
 @app.route('/customer-round-purchase', methods = ['GET', 'POST'])
 def customer_round_purchase():
-    flight_number = request.form.get['flight-number']
-    departure_date = request.form.get['departure-date']
-    departure_time = request.form.get['departure-time']
-    return_date = request.form.get['return-date']
-    return_time = request.form.get['return-time']
+    flight_number = request.form['flight-number']
+    departure_date = request.form['departure-date']
+    departure_time = request.form['departure-time']
+    return_date = request.form['return-date']
+    return_time = request.form['return-time']
     cursor = conn.cursor()
     emptySeatsQuery = ('SELECT f.FlightNumber, f.DepartureDate, f.DepartureTime, COUNT(ticketID) AS bookedSeats, numberOfSeats' 
                        'FROM flight AS f' 
@@ -392,43 +374,11 @@ def customer_trip_cancel():
     return
 
 # give ratings and comment
-@app.route('/customer-rate-comment', methods = ['GET', 'POST'])
-def customer_rate_comment():
-    CustomerEmail = session['username']
-    customer_ticket_ID = request.form.get['ticket-ID']
-    customer_rate = request.form.get['rate']
-    customer_comment = request.form.get['comment']
-    cursor = conn.cursor()
-    flightExistsQuery = ('SELECT FlightNumber, DepartureDate, DepartureTime'
-                        'FROM Ticket NATURAL JOIN PurchasedFor NATURAL JOIN Customer'
-                        'WHERE CustomerEmail = %s AND TicketID = %s AND (CURRENT_DATE > DepartureDate OR (CURRENT_DATE = DepartureDate AND CURRENT_TIME > DepartureTime))')
-    cursor.execute(flightExistsQuery, (CustomerEmail, customer_ticket_ID))
-    data = cursor.fetchone()
-    noRatingCommentQuery = ('SELECT FlightNumber, DepartureDate, DepartureTime, TicketID'
-                            'FROM Suggested NATURAL JOIN Ticket'
-                            'WHERE CuustomerEmail = %s AND TicketID = %s')
-    cursor.execute(noRatingCommentQuery, (CustomerEmail, customer_ticket_ID))
-    data1 = cursor.fetchone()
-
-    if (data and not (data1)):
-        customer_flight_number = data['FlightNumber']
-        customer_departure_date = data['DepartureDate']
-        customer_departure_time = data['DepartureTime']
-        query = 'INSERT INTO Suggested VALUES(%s, %s, %s, %s, %s, %s)'
-        cursor.execute(query, (CustomerEmail, customer_flight_number, customer_departure_date, customer_departure_time, customer_comment, customer_rate))
-        conn.commit()
-        cursor.close()
-        return render_template('customer-rate-comment.html')
-    elif (data1):
-        return
-    
-    return
-
-@app.route('/rate-flights')
+@app.route('/customer-rate-flight', methods=['GET', 'POST'])
 def rate_flights():
-    return render_template('rate-fights.html')
+    return render_template('customer-rate-flight.html')
 
-@app.route('/rate-flights-auth', methods=['GET', 'POST'])
+@app.route('/customer-rate-flight-auth', methods=['GET', 'POST'])
 def rate_flight_auth(): 
     customerEmail = session['username']
     custTicketID = request.form['ticket-number']
@@ -450,20 +400,20 @@ def rate_flight_auth():
         custDeptDate = data1['DepartureDate']
         custDeptTime = data1['DepartureTime']
         ins = 'INSERT INTO suggested VALUES(%s, %s, %s, %s, %s, %s)'
-        cursor.execute(ins, (customerEmail, custFlightNum, custDeptDate, custDeptTime, custComment, custRate))
+        cursor.execute(ins, (customerEmail, custFlightNum, custDeptDate, custDeptTime, custComment, int(custRate)))
         conn.commit()
         cursor.close()
         message = "Submitted Successfully! Click the back button to go home!"
-        return render_template('rate-flights.html', message = message)
+        return render_template('customer-rate-flight.html', message = message)
     elif (data2): 
         error = "Flight already given a rating"
-        return render_template('rate-flights.html', error=error)
+        return render_template('customer-rate-flight.html', error=error)
     else: 
         error = "Ticket ID does not exist or Departure Date in the Future"
-        return render_template('rate-flights.html', error=error)
+        return render_template('customer-rate-flight.html', error=error)
 
 # track my spending
-@app.route('/track-spending')
+@app.route('/customer-track-spending')
 def track_spending(): 
     username = session['username']
     cursor = conn.cursor()
@@ -495,7 +445,27 @@ def track_spending():
         if added == False: 
             values.append(0)
     maximumValue = max(values) + 10
-    return render_template('track-spending.html', labels = labels, values = values, yearSpend = yearSpend, max = maximumValue)    
+    return render_template('customer-track-spending.html', labels = labels, values = values, yearSpend = yearSpend, max = maximumValue)    
+
+@app.route('/customer-track-spending-limits', methods = ['GET', 'POST'])
+def customerSpendingCustom(): 
+	cursor = conn.cursor()
+	#print(request.form)
+	username = session['username']
+	start_date = request.form['start-date1']
+	#print(request.form)
+	end_date = request.form['end-date1']
+	getCustMonthlySpending = 'SELECT MONTHNAME(PurchaseDate) AS month, YEAR(PurchaseDate) AS year, SUM(soldPrice) as spent FROM ticket NATURAL JOIN purchasedfor WHERE CustomerEmail = %s AND PurchaseDate >= %s AND PurchaseDate <= %s GROUP BY MONTHNAME(PurchaseDate)'
+	cursor.execute(getCustMonthlySpending, (username, start_date, end_date))
+	custMonthlySpending = cursor.fetchall() 
+	labels = []
+	values = []
+	for elem in custMonthlySpending: 
+		date = str(elem['month']) + " " +str(elem['year'])
+		labels.append(date)
+		values.append(elem['spent'])
+	maximumValue = max(values) + 10
+	return render_template('customer-track-spending-limits.html', labels = labels, values = values, max = maximumValue)
 
 ##### staff #####
 
@@ -593,8 +563,8 @@ def staff_home():
     return render_template('staff-home.html', name = name)
 
 ### staff use cases ###
-@app.route('/Airline-Staff-View-Flights', methods = ['GET', 'POST'])
-def staffViewFlights():
+@app.route('/staff-flight-view', methods = ['GET', 'POST'])
+def staff_flight_view():
     username = session['username']
     cursor = conn.cursor()
     query = ('SELECT AirlineName FROM AirlineStaff'
@@ -608,21 +578,21 @@ def staffViewFlights():
     cursor.execute(flightQuery, (current_airline_name))
     data = cursor.fetchall()
     cursor.close()
-    return render_template('Airline-Staff-View-Flights.html', flights = data)
+    return render_template('staff-flight-view.html', flights = data)
 
 
-@app.route('/Airline-Staff-Create-Flights', methods=['GET', 'POST'])
-def staffCreateFlights():
-    airline_name = request.form.get['airline-name']
-    departure_date = request.form.get['departure-date']
-    departure_time = request.form.get['departure-time']
-    flight_number = request.form.get['flight-number']
-    departure_airport = request.form.get['departure-airport']
-    arrival_airport = request.form.get['arrival-airport']
-    arrival_date = request.form.get['arrival-airport']
-    arrival_time = request.form.get['arrival-time']
-    base_price = request.form.get['base-price']
-    airplane_ID = request.form.get['airplane-ID']
+@app.route('/staff-create-flight', methods=['GET', 'POST'])
+def staff_create_flight():
+    airline_name = request.form['airline-name']
+    departure_date = request.form['departure-date']
+    departure_time = request.form['departure-time']
+    flight_number = request.form['flight-number']
+    departure_airport = request.form['departure-airport']
+    arrival_airport = request.form['arrival-airport']
+    arrival_date = request.form['arrival-airport']
+    arrival_time = request.form['arrival-time']
+    base_price = request.form['base-price']
+    airplane_ID = request.form['airplane-ID']
 
     cursor = conn.cursor()
     query = ('SELECT * FROM Flight'
@@ -650,10 +620,10 @@ def staffCreateFlights():
 @app.route('/Airline-Staff-Update-Flight-Status', methods=['GET', 'POST'])
 def staffUpdateFlightStatus():
     username = session['username']
-    flight_number = request.form.get['flight-number']
-    departure_date = request.form.get['departure-date']
-    departure_time = request.form.get['departure-time']
-    flight_status = request.form.get['flight-status']
+    flight_number = request.form['flight-number']
+    departure_date = request.form['departure-date']
+    departure_time = request.form['departure-time']
+    flight_status = request.form['flight-status']
     
     cursor = conn.cursor()
     query = ('SELECT * FROM Changes '
@@ -676,11 +646,11 @@ def staffUpdateFlightStatus():
 
 @app.route('/Airline-Staff-Add-Airplane', methods=['GET', 'POST'])
 def staffAddAirplane():
-    airline_name = request.form.get['airline-name']
-    airplane_id = request.form.get['airplane-ID']
-    num_seats = request.form.get['num-seats']
-    airplane_company = request.form.get['airplane_company']
-    airplane_age = request.form.get['airplane_age']
+    airline_name = request.form['airline-name']
+    airplane_id = request.form['airplane-ID']
+    num_seats = request.form['num-seats']
+    airplane_company = request.form['airplane_company']
+    airplane_age = request.form['airplane_age']
 
     cursor = conn.cursor()
     query = ('SELECT * FROM Airplane'
@@ -703,11 +673,11 @@ def staffAddAirplane():
 
 @app.route('/Airline-Staff-Add-Airport', methods=['GET', 'POST'])
 def staffAddAirport():
-    airport_code = request.form.get['airport_code']
-    airport_name = request.form.get['airport_code']
-    airport_city = request.form.get['airport_city']
-    airport_country = request.form.get['airport_country']
-    airport_type = request.form.get['airport_type']
+    airport_code = request.form['airport_code']
+    airport_name = request.form['airport_code']
+    airport_city = request.form['airport_city']
+    airport_country = request.form['airport_country']
+    airport_type = request.form['airport_type']
 
     cursor = conn.cursor()
     query = ('SELECT * FROM Airport'
@@ -726,9 +696,9 @@ def staffAddAirport():
 
 @app.route('/Airline-Staff-View-Ratings', methods = ['GET', 'POST'])
 def staffViewRatings():
-    flight_number = request.form.get['flight-number']
-    departure_date = request.form.get['departure-date']
-    departure_time = request.form.get['departure-time']
+    flight_number = request.form['flight-number']
+    departure_date = request.form['departure-date']
+    departure_time = request.form['departure-time']
     cursor = conn.cursor()
     query = ('SELECT CustomerComment, Rate FROM Suggested'
             'WHERE FlightNumber = %s AND DepartureDate = %s AND DepartureTime = %s')
@@ -740,7 +710,6 @@ def staffViewRatings():
     
     else: 
         return
-
 
 @app.route('/Airline-Staff-View-Frequent-Customers')
 def staffViewFreqCustomers():
@@ -765,7 +734,7 @@ def staffViewFreqCustomers():
 
 @app.route('/Airline-Staff-View-Customer-Flights', methods = ['GET', 'POST'])
 def staffViewCustomerFlights():
-    customer_email = request.form.get['customer-email']
+    customer_email = request.form['customer-email']
     cursor = conn.cursor()
     username = session['username']
     airlineQuery = ('SELECT AirlineName'
