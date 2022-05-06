@@ -851,15 +851,15 @@ def staffViewRevenue():
                            'FROM Ticket'
                            'WHERE PurchaseDate >= CURRENT_DATE - INTERVAL 1 MONTH')
     cursor.execute(monthlyRevenueQuery)
-    #monthSales = cursor.fetchall()
+    monthSales = cursor.fetchall()
 
     annualRevenueQuery = ('SELECT Sum(SoldPrice) As Sale'
                           'FROM Ticket'
                           'WHERE PurchaseDate >= CURRENT_DATE - INTERVAL 1 YEAR')
     cursor.execute(annualRevenueQuery)
-    #yearSales = cursor.fetchall()
+    yearSales = cursor.fetchall()
 
-    return render_template('Airline-Staff-Compare-Revenue.html')
+    return render_template('Airline-Staff-Compare-Revenue.html', monthSales = monthSales, yearSales = yearSales)
 
 
 @app.route('/Airline-Staff-View-Revenue-Travel-Class')
@@ -886,7 +886,7 @@ def staffViewTopDestinations():
                     'WHERE AirlineName = %s'
                     'GROUP BY AirlineName, FlightNumber, DepartureDate, DepartureTime')
     cursor.execute(ratingsQuery, (airline_name['AirlineName']))
-    #averageRatings = cursor.fetchall()
+
     conn.commit()
     topDestinationsMonthQuery = ('SELECT AirportCity'
                             'FROM TICKET NATURAL JOIN PurchasedFor NATURAL JOIN Flight INNER JOIN Airport'
@@ -896,7 +896,7 @@ def staffViewTopDestinations():
                             'ORDER BY Count(AirportName) DESC'
                             'LIMIT 3')
     cursor.execute(topDestinationsMonthQuery, (airline_name['AirlineName']))
-    topDestMonth = cursor.fetchall()
+    #topDestMonth = cursor.fetchall()
     conn.commit()
 
     topDestinationsYearQuery = ('SELECT AirportCity'
@@ -907,7 +907,7 @@ def staffViewTopDestinations():
                             'ORDER BY Count(AirportName) DESC'
                             'LIMIT 3')
     cursor.execute(topDestinationsYearQuery, (airline_name['AirlineName']))
-    topDestYear = cursor.fetchall()
+    #topDestYear = cursor.fetchall()
     conn.commit()
     cursor.close()
 
