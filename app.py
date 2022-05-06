@@ -369,8 +369,8 @@ def customer_round_purchase():
     return render_template('customer-ticket-purchase.html', airline = airline, flight_num = flight_number, dept_date = departure_date, dept_time = departure_time, arr_date = arrival_date, arr_time = arrival_time, arr_air = arrival_airport, dept_air = departure_airport, baseprice = totalPrice, f1price = basePrice1, f2price = basePrice2, round_trip = round_trip)
 
 # card info
-@app.route('customer-card-info', methods = ['GET', 'POST'])
-def customerCardInfo():
+@app.route('/customer-card-info', methods = ['GET', 'POST'])
+def customer_card_info():
     cursor = conn.cursor()
     username = session['username']
     card_number = request.form['card-number']
@@ -488,93 +488,6 @@ def customerSpendingCustom():
 		values.append(elem['spent'])
 	maximumValue = max(values) + 10
 	return render_template('customer-track-spending-limits.html', labels = labels, values = values, max = maximumValue)
-
-##### staff #####
-
-# staff registration / login
-@app.route('/staff-registration', methods=['GET', 'POST'])
-def staff_registration():
-    return render_template('staff-registration.html')
-
-@app.route('/staff-registration-auth', methods=['GET', 'POST'])
-def staff_registration_auth():
-        #grabs information from the forms
-    username = request.form['username']
-    first_name = request.form['first-name']
-    last_name = request.form['last-name']
-    password = request.form['password']
-    dateOfBirth = request.form['date-of-birth']
-    airlineName = request.form['airline']
-    #cursor used to send queries
-    cursor = conn.cursor()
-    #executes query
-    noDupEmailQuery = 'SELECT Username FROM AirlineStaff WHERE Username = %s'
-    cursor.execute(noDupEmailQuery, (username))
-    #stores the results in a variable
-    data = cursor.fetchone()
-    #use fetchall() if you are expecting more than 1 data row
-    error = None
-    if(data):
-        #If the previous query returns data, then user exists
-        error = "This user already exists"
-        return render_template('staff-registration.html', error = error)
-    else:
-        #password = hashlib.md5(password.encode())
-        ins = 'INSERT INTO AirlineStaff VALUES(%s, md5(%s), %s, %s, %s, %s)'
-        cursor.execute(ins, (username, password, first_name, last_name, dateOfBirth, airlineName))
-        conn.commit()
-        cursor.close()
-        return render_template('staff-login.html')
-
-def loggedIn():
-    return len(session) > 0
-
-@app.route('/staff-login-auth',  methods=['GET', 'POST'])
-def staff_login_auth():
-    #grabs information from the forms
-    username = request.form['staff-username']
-    password = request.form['staff-password']
-
-    #cursor used to send queries
-    cursor = conn.cursor()
-    # executes query
-    query = 'SELECT Username, StaffPassword FROM AirlineStaff WHERE Username = %s and StaffPassword = md5(%s)'
-    cursor.execute(query, (username, password))
-    #stores the results in a variable
-    data = cursor.fetchone()
-
-    # use fetchall() if you are expecting more than 1 data row
-    cursor.close()
-    error = None
-    
-    sessionRunning = loggedIn()
-    if (sessionRunning == True): 
-        error = 'Other users signed in. Please sign out of current session.'
-        return render_template('staff-login.html', error=error)
-    
-    if(data):
-        # creates a session for the the user
-        # session is a built in
-        session['username'] = username
-        
-        # query to return the name of the staff
-        cursor = conn.cursor()
-        query = 'SELECT FirstName FROM AirlineStaff WHERE Username = %s and StaffPassword = md5(%s)'
-        cursor.execute(query, (username, password))
-        name = cursor.fetchone()['FirstName']
-        cursor.close()
-
-        return render_template('staff-home.html', name = name)
-    else:
-        error = 'Invalid login or username'
-        return render_template('staff-login.html', error=error)
-
-@app.route('/staff-home')
-def staff_home():
-    # cursor used to send queries
-    cursor = conn.cursor()
-
-    username = session['username']
 
 ##### staff #####
 

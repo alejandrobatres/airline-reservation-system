@@ -6,60 +6,96 @@
 {% block body %}
     <div class="container">
         <h3>Ticket Purchase</h3>
+        <hr>
         <div class="col-md-6 col-md-offset-3">
             {% if error %}
             <div class="alert alert-danger">{{error}}</div>
             {% elif success %}
             <div class="alert alert-success">{{success}}</div>
             {% endif %}
-            <form action="/customer-registration-auth" method="POST" redirect="true">
+            <div class="row">
+                <h2 class="u-align-center u-text u-text-2">Flight Details</h2>
+                <dl class="dl-horizontal">
+                    <dt>Departure Date &amp; Departure Time:</dt>
+                    <dd>{{dept_date}},{{dept_time}}</dd>
+                    <dt>Airline &amp; Arrival Date:</dt>
+                    <dd>{{airline}}, {{arr_date}}</dd>
+                    <dt>Flight Number:</dt>
+                    <dd>{{flight_num}}</dd>
+                    <dt>Arrival and Departure Airport:</dt>
+                    <dd>{{arr_air}}, {{dept_air}}</dd>
+                    <dt>Base Price:</dt>
+                    <dd>${{baseprice}}</dd>
+                    <dt>Round Trip Additional Info:</dt>
+                    <dd>{{round_trip}}</dd>
+                </dl>
+              </div>
+            <form action="/customer-card-info" method="POST" redirect="true">
+                <input type="hidden" id="siteId" name="siteId" value="271440522">
+                <input type="hidden" id="pageId" name="pageId" value="193009990">
+                <input class="hide" style="visibility:hidden" name="airline" type= "text" value= "{{airline}}" readonly>
+                <input class="hide" style="visibility:hidden" name="flight-number" type= "number" value= "{{flight_num}}" readonly>
+                <input class="hide" style="visibility:hidden" name="dept-date" type= "date" value= "{{dept_date}}" readonly>
+                <input class="hide" style="visibility:hidden" name="dept-time" type= "time" value= "{{dept_time}}" readonly>
+                <input class="hide" style="visibility:hidden" name="price" type= "number" value= "{{baseprice}}" readonly>
+                <input class="hide" style="visibility:hidden" name="round-trip" type= "text" value= "{{round_trip}}" readonly>
+                <input class="hide" style="visibility:hidden" name="bookingagent" type= "text" value= "{{bookingAgent}}" readonly>
+                <input class="hide" style="visibility:hidden" name="arr-time" type= "time" value= "{{arr_time}}" readonly>
+                <input class="hide" style="visibility:hidden" name="arr-date" type= "date" value= "{{arr_date}}" readonly>
+                <input class="hide" style="visibility:hidden" name="base-price-1" type= "number" value= "{{f1price}}" readonly>
+                <input class="hide" style="visibility:hidden" name="base-price-2" type= "number" value= "{{f2price}}" readonly>
                 <div class="form-group">
-                    <label for="cust-name-input">Full name</label>
-                    <input class="form-control" id="cust-name-input" type="text" placeholder="Joe Biden" name="name" required>
+                    <label for="card-type">Card Type</label>
+                    <select id="card-type" class="form-control" name="card-type">
+                        <option value="credit">Credit</option>
+                        <option value="debit">Debit</option>
+                    </select>
                 </div>
                 <div class="form-group">
-                    <label for="cust-phone-input">Phone</label>
-                    <input class="form-control" id="cust-phone-input" type="text" placeholder="(123)456-7890" name="phone" maxlength="11" required>
+                    <label for="card-name">Name On Card</label>
+                    <input class="form-control" id="card-name" type="text" placeholder="Joe Biden" name="card-name" required>
                 </div>
                 <div class="form-group">
-                    <label for="cust-email-input">Email</label>
-                    <input class="form-control" id="cust-email-input" type="text" placeholder="joe@nyu.edu" name="email" required>
+                    <label for="card-name">Name On Card</label>
+                    <input class="form-control" id="card-name" type="text" placeholder="Joe Biden" name="card-name" required>
                 </div>
-                <div class="form-group">
-                    <label for="cust-buildnum-input">Building Number</label>
-                    <input class="form-control" id="cust-buildnum-input" type="text" placeholder="123" name="building-number" maxlength="3" required>
-                </div>
-                <div class="form-group">
-                    <label for="cust-street-input">Street</label>
-                    <input class="form-control" id="cust-street-input" type="text" placeholder="Jay Sreet" name="street" required>
-                </div>
-                <div class="form-group">
-                    <label for="cust-city-input">City</label>
-                    <input class="form-control" id="cust-city-input" type="text" placeholder="New York" name="city" required>
-                </div>
-                <div class="form-group">
-                    <label for="cust-state-input">State</label>
-                    <input class="form-control" id="cust-state-input" type="text" placeholder="New York" name="state" required>
-                </div>
-                <div class="form-group">
-                    <label for="cust-passnum-input">Passport Number</label>
-                    <input class="form-control" id="cust-passnum-input" type="text" placeholder="123456789" name="passport-number" maxlength="8" required>
-                </div>
-                <div class="form-group">
-                    <label for="cust-passexp-input">Passport Expiration</label>
-                    <input class="form-control" id="cust-passexp-input" type="date" placeholder="MM/DD/YYYY" name="passport-expiration" required>
-                </div>
-                <div class="form-group">
-                    <label for="cust-passcount-input">Passport Country</label>
-                    <input class="form-control" id="cust-passcount-input" type="text" placeholder="USA" name="passport-country" maxlength="3" required>
-                </div>
-                <div class="form-group">
-                    <label for="cust-dob-input">Date of Birth</label>
-                    <input class="form-control" id="cust-dob-input" type="date" placeholder="MM/DD/YYYY" name="date-of-birth" required>
-                </div>
-                <div class="form-group">
-                    <label for="cust-password-input">Password</label>
-                    <input class="form-control" id="cust-password-input" type="text" placeholder="abc123" name="password" required>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="card-month">Expiration Month</label>
+                            <select id="card-month" class="form-control" name="card-month">
+                                <option value="01">01</option>
+                                <option value="02">02</option>
+                                <option value="03">03</option>
+                                <option value="04">04</option>
+                                <option value="05">05</option>
+                                <option value="06">06</option>
+                                <option value="07">07</option>
+                                <option value="08">08</option>
+                                <option value="09">09</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="card-year">Expiration Month</label>
+                            <select id="card-year" class="form-control" name="card-year">
+                                <option value="2030">2030</option>
+                                <option value="2029">2029</option>
+                                <option value="2028">2028</option>
+                                <option value="2027">2027</option>
+                                <option value="2026">2026</option>
+                                <option value="2025">2025</option>
+                                <option value="2024">2024</option>
+                                <option value="2023">2023</option>
+                                <option value="2022">2022</option>
+                                <option value="2021">2021</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <button type="submit" class="btn btn-secondary">Submit</button>
