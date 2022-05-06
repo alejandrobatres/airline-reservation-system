@@ -601,9 +601,12 @@ def staff_flight_view():
     cursor.close()
     return render_template('staff-flight-view.html', flights = data)
 
-
-@app.route('/staff-create-flight', methods=['GET', 'POST'])
+@app.route('/staff-create-flight')
 def staff_create_flight():
+    return render_template('staff-create-flight.html')
+
+@app.route('/staff-create-flight-auth', methods=['GET', 'POST'])
+def staff_create_flight_auth():
     airline_name = request.form['airline-name']
     departure_date = request.form['departure-date']
     departure_time = request.form['departure-time']
@@ -636,10 +639,14 @@ def staff_create_flight():
         cursor.execute(changesValues, (username, flight_number, departure_date, departure_time, 'On Time'))
         conn.commit()
         cursor.close()
-        return render_template()            #need a new template here
+        return          #need a new template here
 
-@app.route('/staff-Update-Flight-Status', methods=['GET', 'POST'])
-def staffUpdateFlightStatus():
+@app.route('/staff-update-flight-status')
+def staff_update_flight_status():
+    return render_template('staff-update-flight-status.html')
+
+@app.route('/staff-update-flight-status-auth', methods=['GET', 'POST'])
+def staff_update_flight_status_auth():
     username = session['username']
     flight_number = request.form['flight-number']
     departure_date = request.form['departure-date']

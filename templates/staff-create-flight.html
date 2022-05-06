@@ -1,0 +1,64 @@
+{% extends "layouts/base.html" %}
+{% block head %}
+<script src="js/main.js"></script>
+{% endblock %}
+{% block title %}Create Flight{% endblock %}
+{% block body %}
+    <div class="container">
+        <h3>Create Flight</h3>
+        <hr>
+        <div class="col-md-6 col-md-offset-3">
+            {% if error %}
+            <div class="alert alert-danger">{{error}}</div>
+            {% elif success %}
+            <div class="alert alert-success">{{success}}</div>
+            {% endif %}
+            <form action="/staff-create-flight-auth" method="POST" redirect>
+                <div class="form-group">
+                    <label for="airline-name2">Airline Name</label>
+                    <input class="form-control" id="airline-name2" type="text" placeholder="" name="airline-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="departure-date2">Departure Date</label>
+                    <input class="form-control" id="departure-date2" type="date" placeholder="" name="departure-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="departure-time2">Departure Time</label>
+                    <input class="form-control" id="departure-time2" type="time" placeholder="" name="departure-time" required>
+                </div>
+                <div class="form-group">
+                    <label for="flight-number2">Flight Number</label>
+                    <input class="form-control" id="flight-number2" type="text" placeholder="" name="flight-number" required>
+                </div>
+                <div class="form-group">
+                    <label for="departure-airport2">Departure Airport</label>
+                    <input class="form-control" id="departure-airport2" type="text" placeholder="" name="departure-airport" required>
+                </div>
+                <div class="form-group">
+                    <label for="arrival-airport2">Arrival Airport</label>
+                    <input class="form-control" id="arrival-airport2" type="text" placeholder="" name="arrival-airport" required>
+                </div>
+                <div class="form-group">
+                    <label for="arrival-date2">Arrival Date</label>
+                    <input class="form-control" id="arrival-date2" type="date" placeholder="" name="arrival-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="arrival-time2">Arrival Time</label>
+                    <input class="form-control" id="arrival-time2" type="time" placeholder="" name="arrival-time" required>
+                </div>
+                <div class="form-group">
+                    <label for="base-price2">Base Price</label>
+                    <input class="form-control" id="base-price2" type="text" placeholder="" name="base-price" required>
+                </div>
+                <div class="form-group">
+                    <label for="airplane-ID2">Airplane ID</label>
+                    <input class="form-control" id="airplane-ID2" type="text" placeholder="" name="airplane-ID" required>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary btn-block">Submit</button>
+                    <h4><a href="http://127.0.0.1:5000/staff-home">Return Home</a></h4>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

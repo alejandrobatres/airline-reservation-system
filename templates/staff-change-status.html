@@ -1,0 +1,40 @@
+{% extends "layouts/base.html" %}
+{% block head %}
+<script src="js/main.js"></script>
+{% endblock %}
+{% block title %}Change Flight Status{% endblock %}
+{% block body %}
+    <div class="container">
+        <h3>Change Flight Status</h3>
+        <hr>
+        <div class="col-md-6 col-md-offset-3">
+            {% if error %}
+            <div class="alert alert-danger">{{error}}</div>
+            {% elif success %}
+            <div class="alert alert-success">{{success}}</div>
+            {% endif %}
+            <form action="/staff-update-flight-status-auth" method="POST" redirect>
+                <div class="form-group">
+                    <label for="flight-number5">Flight Number</label>
+                    <input class="form-control" id="flight-number5" type="text" placeholder="" name="flight-number" required>
+                </div>
+                <div class="form-group">
+                    <label for="departure-date5">Departure Date</label>
+                    <input class="form-control" id="departure-date5" type="date" placeholder="" name="departure-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="departure-time5">Departure Time</label>
+                    <input class="form-control" id="departure-time5" type="date" placeholder="" name="departure-time" required>
+                </div>
+                <div class="form-group">
+                    <label for="flight-status5">Flight Status</label>
+                    <input class="form-control" id="flight-status5" type="text" placeholder="" name="flight-status" required>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary btn-block">Submit</button>
+                    <h4><a href="http://127.0.0.1:5000/staff-home">Return Home</a></h4>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
