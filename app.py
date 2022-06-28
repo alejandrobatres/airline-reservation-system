@@ -49,7 +49,7 @@ def staff_login():
 @app.route('/logout')
 def logout():
     session.pop('username')
-    return redirect('/customer-login')
+    return redirect('/')
 
 # public information
 @app.route('/public-flight-search')
@@ -60,8 +60,9 @@ def public_flight_search():
 def public_flight_view():
     cursor = conn.cursor()
     query = """
-            SELECT AirlineName, FlightNumber, DepartureDate, DepartureTime, ArrivalDate, FlightStatus
-            FROM Flight NATURAL JOIN Updates
+            SELECT AirlineName, FlightNumber, DepartureDate, DepartureTime, ArrivalDate, ArrivalTime, FlightStatus, ArrivalAirport, DepartureAirport
+            FROM Flight NATURAL JOIN Changes
+            WHERE (DepartureDate > CURRENT_DATE)
             ORDER BY DepartureDate
             """
     cursor.execute(query)
@@ -114,13 +115,13 @@ def customer_registration_auth():
         cursor.execute(ins, (name, email, password, int(buildingNumber), street, city, state, phone, passportNumber,passportExp, passportCountry, dateOfBirth))
         conn.commit()
         cursor.close()
-        return render_template('index.html')
+        return render_template('customer-login.html')
 
 def loggedIn():
     return len(session) > 0
 
 @app.route('/customer-login-auth',  methods=['GET', 'POST'])
-def customer_login_auth():
+def customer_login_auth(): 
     #grabs information from the forms
     username = request.form['customer-username']
     password = request.form['customer-password']
@@ -154,7 +155,7 @@ def customer_login_auth():
         name = cursor.fetchone()['CustomerName']
         cursor.close()
 
-        return render_template('customer-home.html', name = name)
+        return redirect('customer-home')
     else:
         error = 'Invalid login or username'
         return render_template('customer-login.html', error=error)
@@ -162,6 +163,9 @@ def customer_login_auth():
 @app.route('/customer-home')
 def customer_home():
     # cursor used to send queries
+    if len(session) == 0:
+        return render_template('no-session.html')
+    
     cursor = conn.cursor()
 
     username = session['username']
@@ -182,15 +186,14 @@ def customer_flight_view():
     cursor = conn.cursor()
     # query = 'SELECT AirlineName, FlightNumber, DepartureDate, DepartureTime, ArrivalDate, ArrivalTime, FlightStatus FROM Flight NATURAL JOIN updates NATURAL JOIN purchasedfor NATURAL JOIN ticket NATURAL JOIN customer WHERE CustomerEmail = %s AND DepartureDate > CURRENT_DATE OR (DepartureDate = CURRENT_DATE AND DepartureTime > CURRENT_TIME) ORDER BY DepartureDate'
     query = """
-            SELECT AirlineName, FlightNumber, DepartureDate, DepartureTime, ArrivalDate, ArrivalTime, FlightStatus
-            FROM Flight NATURAL JOIN Changes NATURAL JOIN PurchasedFor NATURAL JOIN Ticket NATURAL JOIN CUSTOMER
-            WHERE CustomerEmail = %s AND DepartureDate > CURRENT_DATE OR (DepartureDate = CURRENT_DATE AND DepartureTime > CURRENT_TIME)
+            SELECT AirlineName, FlightNumber, DepartureDate, DepartureTime, ArrivalDate, ArrivalTime, FlightStatus FROM Flight 
+            NATURAL JOIN Ticket NATURAL JOIN Changes
+            WHERE (CustomerEmail = %s AND DepartureDate > CURRENT_DATE) OR (DepartureDate = CURRENT_DATE AND DepartureTime > CURRENT_TIME)
             ORDER BY DepartureDate
             """
     cursor.execute(query, (username))
     data = cursor.fetchall()
     for item in data:
-        print(item['AirlineName'])
         cursor.close()
     return render_template('customer-flight-view.html', flights = data)
 
@@ -200,14 +203,13 @@ def customer_past_flight_view():
     cursor = conn.cursor()
     query = """
             SELECT AirlineName, FlightNumber, DepartureDate, DepartureTime, ArrivalDate, ArrivalTime, FlightStatus
-            FROM Flight NATURAL JOIN Changes NATURAL JOIN PurchasedFor NATURAL JOIN Ticket NATURAL JOIN CUSTOMER
+            FROM Flight NATURAL JOIN Changes NATURAL JOIN Ticket
             WHERE CustomerEmail = %s AND DepartureDate < CURRENT_DATE OR (DepartureDate = CURRENT_DATE AND DepartureTime < CURRENT_TIME)
             ORDER BY DepartureDate
             """
     cursor.execute(query, (username))
     data = cursor.fetchall()
     for item in data:
-        print(item['AirlineName'])
         cursor.close()
     return render_template('customer-past-flight-view.html', flights = data)
 
@@ -216,6 +218,7 @@ def customer_past_flight_view():
 def customer_flight_search():
     return render_template('customer-flight-search.html')
 
+# find oneway tickets
 @app.route('/customer-oneway-results', methods = ['GET', 'POST'])
 def customer_oneway_flight_search():
     departure_city = request.form['departure-city']
@@ -224,12 +227,13 @@ def customer_oneway_flight_search():
     destination_airport = request.form['destination-airport']
     departure_date = request.form['departure-date']
     cursor = conn.cursor()
+    # oneWayQuery = 'SELECT f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, ArrivalDate, FlightStatus, COUNT(ticketID) as booked, numberOfSeats FROM flight as f LEFT JOIN purchasedfor AS p ON p.FlightNumber = f.FlightNumber AND p.DepartureDate = f.DepartureDate AND p.DepartureTime = f.DepartureTime INNER JOIN Changes AS u ON u.FlightNumber = f.FlightNumber AND u.DepartureDate = f.DepartureDate AND u.DepartureTime = f.DepartureTime INNER JOIN airplane ON f.AirplaneID = airplane.AirplaneID INNER JOIN airport AS a1 ON a1.AirportName = f.DepartureAirport INNER JOIN airport AS a2 ON a2.AirportName = f.ArrivalAirport WHERE f.FlightNumber NOT IN (SELECT FlightNumber from flight as f2 GROUP BY FlightNumber HAVING COUNT(f2.FlightNumber) > 1) AND a1.AirportCity = %s AND f.DepartureAirport = %s AND a2.AirportCity = %s AND f.ArrivalAirport = %s AND f.DepartureDate = %s GROUP BY f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, ArrivalDate, FlightStatus, NumberOfSeats HAVING booked < NumberOfSeats'
     oneWayQuery =  """
-                    SELECT f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, ArrivalDate, FlightStatus, numberOfSeats, COUNT(ticketID) as numFlights
+                    SELECT f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, ArrivalDate, ArrivalTime, FlightStatus, numberOfSeats, COUNT(TicketID) as numFlights
                     FROM Flight as f
-                    LEFT JOIN PurchasedFor AS pf
-                    On pf.FlightNumber = f.FlightNumber AND pf.DepartureDate = f.DepartureDate AND pf.DepartureTime = f.DepartureTime
-                    INNER JOIN Updates AS u
+                    LEFT JOIN Ticket AS t
+                    On t.FlightNumber = f.FlightNumber
+                    INNER JOIN Changes AS u
                     ON u.FlightNumber = f.FlightNumber AND u.DepartureDate = f.DepartureDate AND u.DepartureTime = f.DepartureTime
                     INNER JOIN Airplane
                     ON f.AirplaneID = airplane.AirplaneID
@@ -260,6 +264,7 @@ def customer_oneway_flight_search():
         return render_template('customer-oneway-results.html', flights = data, error = message)
     return
 
+# find round-trip tickets
 @app.route('/customer-round-results', methods = ['GET', 'POST'])
 def customer_round_flight_search():
     departure_city = request.form['departure-city']
@@ -269,42 +274,44 @@ def customer_round_flight_search():
     departure_date = request.form['departure-date']
     return_date = request.form['return-date']
     cursor = conn.cursor()
-    twoWayQuery = """
-                    SELECT f.AirlineName, f.FlightNumber, f.DepartureDate, f3.DepartureDate AS returnDate, f.DepartureTime, f3.DepartureTime AS returnTime, f.ArrivalDate, FlightStatus, numberOfSeats, COUNT(ticketID) AS numFlights
-                    FROM Flight AS f
-                    LEFT JOIN PurchasedFor AS pf
-                    ON pf.FlightNumber = f.FlightNumber AND pf.DepartureDate = f.DepartureDATE AND pf.DepartureTime = f.DepartureTime
-                    INNER JOIN Updates AS u
-                    ON u.FlightNumber = f.FlightNumber AND u.DepartureDate = f.DepartureDate AND u.DepartureTime = f.DepartureTime
-                    INNER JOIN Airport AS airport1
-                    ON airport1.AirportName = f.DepartureAirport
-                    INNER JOIN Airport AS airport2
-                    ON airport2.AirportName = f.ArrivalAirport
-                    INNER JOIN Flight AS f3
-                    ON f.FlightNumber = f3.FlightNumber AND f.ArrivalAirport = f3.DepartureAirport
-                    WHERE f.FlightNumber IN
-                        (SELECT FlightNumber
-                        FROM Flight AS f2
-                        GROUP BY FlightNumber
-                        HAVING COUNT(f2.FlightNumber) > 1)
-                    AND f3.DepartureDate > f.DepartureDate AND airport1.AirportCity = %s AND f.DepartureAirport = %s AND airport2.AirportCity = %s AND f.ArrivalAirport = %s AND f.DepartureDate = %s AND f3.DepartureDate = %s
-                    GROUP BY f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, f.ArrivalDate, FlightStatus, returnDate, returnTime, numberOfSeats
-                    HAVING numFlights < NumberOfSeats
-                  """
-    cursor.execute(twoWayQuery, (departure_city,departure_airport,destination_city,destination_airport,departure_date,return_date))
-    data = cursor.fetchall()
+    oneWayQuery =  """
+                SELECT f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, ArrivalDate, ArrivalTime, FlightStatus, numberOfSeats, COUNT(TicketID) as numFlights
+                FROM Flight as f
+                LEFT JOIN Ticket AS t
+                On t.FlightNumber = f.FlightNumber
+                INNER JOIN Changes AS u
+                ON u.FlightNumber = f.FlightNumber AND u.DepartureDate = f.DepartureDate AND u.DepartureTime = f.DepartureTime
+                INNER JOIN Airplane
+                ON f.AirplaneID = airplane.AirplaneID
+                INNER JOIN Airport AS airport1
+                ON airport1.AirportName = f.DepartureAirport
+                INNER JOIN Airport AS airport2
+                ON airport2.AirportName = f.ArrivalAirport
+                WHERE f.FlightNumber NOT IN
+                    (SELECT FlightNumber FROM Flight as f2 
+                    GROUP BY FlightNumber 
+                    HAVING COUNT(f2.FlightNumber) > 1)
+                AND airport1.AirportCity = %s AND f.DepartureAirport = %s AND airport2.AirportCity = %s AND f.ArrivalAirport = %s AND f.DepartureDate = %s
+                GROUP BY f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, ArrivalDate, FlightStatus, numberOfSeats
+                HAVING numFlights < NumberOfSeats
+                """
+    cursor.execute(oneWayQuery, (departure_city, departure_airport, destination_city, destination_airport, departure_date))
+    departs = cursor.fetchall()
+
+    cursor.execute(oneWayQuery, (destination_city, destination_airport, departure_city, departure_airport, return_date))
+    returns = cursor.fetchall()
+
     cursor.close()
     today = date.today()
     if departure_date < str(today):
         message = 'Date is in the past'
         data = ''
-        return render_template('customer-round-results.html', flights = data, error = message)
-    elif (data):
-        return render_template('customer-round-results.html', flights = data)
+        return render_template('customer-round-results.html', error = message)
+    elif (departs and returns):
+        return render_template('customer-round-results.html', departs = departs, returns = returns)
     else:
         message = "No flights available"
-        return render_template('customer-round-results.html', flights = data, error = message)
-    return
+        return render_template('customer-round-results.html',  error = message)
 
 # purchase tickets
 @app.route('/customer-purchase-ticket', methods = ['GET', 'POST'])
@@ -313,62 +320,58 @@ def customer_ticket_purchase():
     dept_date = request.form['departure-date']
     dept_time = request.form['departure-time']
     cursor = conn.cursor()
-    checkFlightHasSeats = 'SELECT f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, f.BasePrice, f.ArrivalDate, f.ArrivalTime, f.ArrivalAirport, f.DepartureAirport, COUNT(ticketID) as booked, numberOfSeats FROM flight as f LEFT JOIN purchasedfor AS p ON p.FlightNumber = f.FlightNumber AND p.DepartureDate = f.DepartureDate AND p.DepartureTime = f.DepartureTime INNER JOIN updates AS u ON u.FlightNumber = f.FlightNumber AND u.DepartureDate = f.DepartureDate AND u.DepartureTime = f.DepartureTime INNER JOIN airplane ON f.AirplaneID = airplane.AirplaneID INNER JOIN airport AS a1 ON a1.AirportName = f.DepartureAirport INNER JOIN airport AS a2 ON a2.AirportName = f.ArrivalAirport WHERE f.FlightNumber NOT IN (SELECT FlightNumber from flight as f2 GROUP BY FlightNumber HAVING COUNT(f2.FlightNumber) > 1) AND f.DepartureDate = %s AND f.DepartureTime = %s AND f.FlightNumber = %s GROUP BY f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, ArrivalDate, FlightStatus HAVING booked < NumberOfSeats'
+    checkFlightHasSeats = 'SELECT f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, f.BasePrice, f.ArrivalDate, f.ArrivalTime, f.ArrivalAirport, f.DepartureAirport, COUNT(ticketID) as booked, numberOfSeats FROM flight as f LEFT JOIN purchasedfor AS p ON p.FlightNumber = f.FlightNumber AND p.DepartureDate = f.DepartureDate AND p.DepartureTime = f.DepartureTime INNER JOIN Changes AS u ON u.FlightNumber = f.FlightNumber AND u.DepartureDate = f.DepartureDate AND u.DepartureTime = f.DepartureTime INNER JOIN airplane ON f.AirplaneID = airplane.AirplaneID INNER JOIN airport AS a1 ON a1.AirportName = f.DepartureAirport INNER JOIN airport AS a2 ON a2.AirportName = f.ArrivalAirport WHERE f.FlightNumber NOT IN (SELECT FlightNumber from flight as f2 GROUP BY FlightNumber HAVING COUNT(f2.FlightNumber) > 1) AND f.DepartureDate = %s AND f.DepartureTime = %s AND f.FlightNumber = %s GROUP BY f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, ArrivalDate, FlightStatus, NumberOfSeats HAVING booked < NumberOfSeats'
     cursor.execute(checkFlightHasSeats, (dept_date, dept_time, flight_number))
     data = cursor.fetchone()
-    print(request.form)
-    print(data)
     airline, arrival_date, arrival_airport, dept_air, arr_time = data['AirlineName'], data['ArrivalDate'], data['ArrivalAirport'], data['DepartureAirport'], data['ArrivalTime']
     totalBooked = data['booked']
     totalSeats = data['numberOfSeats']
     basePrice = data['BasePrice']
+    cursor.close()
     if totalBooked/totalSeats >= 0.7: 
         basePrice *= 1.2 
     round_trip = "N/A"
-    return render_template('customer-purchase-tickets.html', airline = airline, flight_num = flight_number, dept_date = dept_date, dept_time = dept_time, arr_date = arrival_date, arr_time = arr_time, arr_air = arrival_airport, dept_air = dept_air, baseprice = basePrice, f1price = basePrice, round_trip = round_trip, bookingAgent = "NULL")
+    return render_template('customer-purchase-ticket.html', airline = airline, flight_num = flight_number, dept_date = dept_date, dept_time = dept_time, arr_date = arrival_date, arr_time = arr_time, arr_air = arrival_airport, dept_air = dept_air, baseprice = basePrice)
 
 @app.route('/customer-round-purchase', methods = ['GET', 'POST'])
 def customer_round_purchase():
-    flight_number = request.form['flight-number']
+    flight_number1 = request.form['flight-number1']
     departure_date = request.form['departure-date']
     departure_time = request.form['departure-time']
+    flight_number2 = request.form['flight-number2']
     return_date = request.form['return-date']
     return_time = request.form['return-time']
+    
     cursor = conn.cursor()
-    emptySeatsQuery = ('SELECT f.FlightNumber, f.DepartureDate, f.DepartureTime, COUNT(ticketID) AS bookedSeats, numberOfSeats' 
-                       'FROM flight AS f' 
-                       'NATURAL JOIN airplane LEFT JOIN Purchasedfor AS pf'
-                       'ON f.DepartureDate = pf.DepartureDate AND f.DepartureTime = pf.DepartureTime AND f.FlightNumber = pf.FlightNumber' 
-                       'WHERE f.flightNumber = %s AND f.departureDate = %s AND f.departureTime = %s' 
-                       'GROUP BY f.FlightNumber, f.DepartureDate, f.DepartureTime, numberOfSeats')
-    cursor.execute(emptySeatsQuery, (flight_number, departure_date, departure_time))
-    flight1Seats = cursor.fetchone()
-    flight1SeatsBooked, flight1TotalSeats = flight1Seats['booked'], flight1Seats['numberOfSeats']
-    if flight1SeatsBooked/flight1TotalSeats == 1 or flight1Seats['DepartureDate'] < date.today():
-        error = "Flight fully booked or already left"
-        return render_template('Customer-Purchase-Flight.html', error = error)
-    cursor.execute(emptySeatsQuery, (flight_number, return_date, return_time))
-    flight2Seats = cursor.fetchone()
-    flight2SeatsBooked, flight2TotalSeats = flight2Seats['booked'], flight2Seats['numberOfSeats']
-    flightPriceQuery = ('SELECT * FROM Flight'
-                        'WHERE FlightNumber = %s AND DepartureDate = %s AND DepartureTime = %s')
-    cursor.execute(flightPriceQuery, (flight_number, departure_date, departure_time))
-    flight1Price = cursor.fetchone()
-    airline, arrival_date, arrival_time, arrival_airport = flight1Price['AirlineName'], flight1Price['ArrivalDate'], flight1Price['ArrivalTime'], flight1Price['ArrivalAirport']
-    basePrice1 = flight1Price['BasePrice']
-    cursor.execute(flightPriceQuery, (flight_number, return_date, return_time))
-    flight2Price = cursor.fetchone()
-    departure_airport = flight2Price['DepartureAirport']
-    basePrice2 = flight2Price['BasePrice']
-    if flight1SeatsBooked/flight1TotalSeats >= 0.75:
-        basePrice1 *= 1.25
-    if flight2SeatsBooked / flight2TotalSeats >= 0.75:
-        basePrice2 *= 1.25
-    totalPrice = basePrice1 + basePrice2
-    round_trip = "Returning Flight: \nReturn Date: " + str(return_date) + "\nReturn Time: " + str(return_time)
-    return render_template('customer-ticket-purchase.html', airline = airline, flight_num = flight_number, dept_date = departure_date, dept_time = departure_time, arr_date = arrival_date, arr_time = arrival_time, arr_air = arrival_airport, dept_air = departure_airport, baseprice = totalPrice, f1price = basePrice1, f2price = basePrice2, round_trip = round_trip)
 
-# card info
+    checkFlightHasSeats = 'SELECT f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, f.BasePrice, f.ArrivalDate, f.ArrivalTime, f.ArrivalAirport, f.DepartureAirport, COUNT(ticketID) as booked, numberOfSeats FROM flight as f LEFT JOIN purchasedfor AS p ON p.FlightNumber = f.FlightNumber AND p.DepartureDate = f.DepartureDate AND p.DepartureTime = f.DepartureTime INNER JOIN Changes AS u ON u.FlightNumber = f.FlightNumber AND u.DepartureDate = f.DepartureDate AND u.DepartureTime = f.DepartureTime INNER JOIN airplane ON f.AirplaneID = airplane.AirplaneID INNER JOIN airport AS a1 ON a1.AirportName = f.DepartureAirport INNER JOIN airport AS a2 ON a2.AirportName = f.ArrivalAirport WHERE f.FlightNumber NOT IN (SELECT FlightNumber from flight as f2 GROUP BY FlightNumber HAVING COUNT(f2.FlightNumber) > 1) AND f.DepartureDate = %s AND f.DepartureTime = %s AND f.FlightNumber = %s GROUP BY f.AirlineName, f.FlightNumber, f.DepartureDate, f.DepartureTime, ArrivalDate, FlightStatus, NumberOfSeats HAVING booked < NumberOfSeats'
+
+    cursor.execute(checkFlightHasSeats, (departure_date, departure_time, flight_number1))
+    data1 = cursor.fetchone()
+    print(data1)
+    cursor.execute(checkFlightHasSeats, (return_date, return_time, flight_number2))
+    data2 = cursor.fetchone()
+
+    airline1, arrival_date1, arrival_airport1, dept_air1, arr_time1 = data1['AirlineName'], data1['ArrivalDate'], data1['ArrivalAirport'], data1['DepartureAirport'], data1['ArrivalTime']
+    totalBooked1 = data1['booked']
+    totalSeats1 = data1['numberOfSeats']
+    basePrice1 = data1['BasePrice']
+    if totalBooked1/totalSeats1 >= 0.7: 
+        basePrice1 *= 1.2 
+
+    airline2, arrival_date2, arrival_airport2, dept_air2, arr_time2 = data2['AirlineName'], data2['ArrivalDate'], data2['ArrivalAirport'], data2['DepartureAirport'], data2['ArrivalTime']
+    totalBooked2 = data2['booked']
+    totalSeats2 = data2['numberOfSeats']
+    basePrice2 = data2['BasePrice']
+    if totalBooked2/totalSeats2 >= 0.7: 
+        basePrice2 *= 1.2 
+
+    baseprice = basePrice1 + basePrice2
+    cursor.close()
+
+    return render_template('customer-purchase-ticket.html', round = "round", airline1 = airline1, flight_num1 = flight_number1, dept_date1 = departure_date, dept_time1 = departure_time, arr_date1 = arrival_date1, arr_time1 = arr_time1, arr_air1 = arrival_airport1, dept_air1 = dept_air1, baseprice1 = basePrice1, airline2 = airline2, flight_num2 = flight_number2, dept_date2 = return_date, dept_time2 = return_time, arr_date2 = arrival_date2, arr_time2 = arr_time2, arr_air2 = arrival_airport2, dept_air2 = dept_air2, baseprice2 = basePrice2, baseprice = baseprice)
+
+# enter card information
 @app.route('/customer-card-info', methods = ['GET', 'POST'])
 def customer_card_info():
     cursor = conn.cursor()
@@ -387,16 +390,18 @@ def customer_card_info():
     cursor.execute(cardExistsQuery, (card_number))
     data = cursor.fetchone()
     if (data):
-        print('Card already exists.')
+        usesQuery = 'INSERT INTO Uses VALUES(%s, %s)'
+        cursor.execute(usesQuery, (card_number, username))
+        return render_template('customer-purchase-ticket.html', success='Ticket purchased!')
     else:
         cardQuery = 'INSERT INTO CardInfo VALUES(%s, %s, %s, %s)'
         cursor.execute(cardQuery, (card_number, card_type, card_name, card_expiration))
         usesQuery = 'INSERT INTO Uses VALUES(%s, %s)'
         cursor.execute(usesQuery, (card_number, username))
-        return render_template()
+        return render_template('customer-purchase-ticket.html', success='Ticket purchased!')
 
 # give ratings and comment
-@app.route('/customer-rate-flight', methods=['GET', 'POST'])
+@app.route('/customer-rate-flight')
 def rate_flights():
     return render_template('customer-rate-flight.html')
 
@@ -404,33 +409,27 @@ def rate_flights():
 def rate_flight_auth(): 
     customerEmail = session['username']
     custTicketID = request.form['ticket-number']
-    custRate = request.form['rate']
+    custRate = request.form['rating']
     custComment = request.form['comment']
     cursor = conn.cursor(); 
-    print(request.form)
-    checkCustFlightExist = 'SELECT FlightNumber, DepartureDate, DepartureTime FROM ticket NATURAL JOIN purchasedfor NATURAL JOIN customer WHERE CustomerEmail = %s AND TicketID = %s AND (CURRENT_DATE > DepartureDate OR (CURRENT_DATE = DepartureDate AND CURRENT_TIME > DepartureTime))'
+    checkCustFlightExist = 'SELECT f.FlightNumber, f.DepartureDate, f.DepartureTime FROM Ticket LEFT JOIN Flight AS f on Ticket.FlightNumber = f.FlightNumber WHERE CustomerEmail = %s AND TicketID = %s AND (CURRENT_DATE > DepartureDate OR (CURRENT_DATE = DepartureDate AND CURRENT_TIME > DepartureTime))'
     cursor.execute(checkCustFlightExist,(customerEmail, custTicketID))
     data1 = cursor.fetchone()
-    print(data1)
-    checkNoRate = 'SELECT FlightNumber, DepartureDate, DepartureTime, TicketID FROM suggested NATURAL JOIN ticket WHERE CustomerEmail = %s AND TicketID = %s'
+    checkNoRate = 'SELECT f.FlightNumber, f.DepartureDate, f.DepartureTime, TicketID FROM Suggested NATURAL JOIN Ticket LEFT JOIN Flight AS f ON Ticket.FlightNumber = f.FlightNumber WHERE CustomerEmail = %s AND TicketID = %s'
     cursor.execute(checkNoRate, (customerEmail, custTicketID))
     data2 = cursor.fetchone()
-    print(data2)
-    print(data2)
     if(data1 and not(data2)): #customer was on the flight and there was no rating written 
         custFlightNum = data1['FlightNumber']
         custDeptDate = data1['DepartureDate']
         custDeptTime = data1['DepartureTime']
-        ins = 'INSERT INTO suggested VALUES(%s, %s, %s, %s, %s, %s)'
-        cursor.execute(ins, (customerEmail, custFlightNum, custDeptDate, custDeptTime, custComment, int(custRate)))
-        conn.commit()
-        cursor.close()
+        ins = 'INSERT INTO Suggested VALUES(%s, %s, %s, %s, %s, %s)'
+        cursor.execute(ins, (customerEmail, custTicketID, custDeptDate, custDeptTime, custComment, custRate))
         message = "Submitted Successfully! Click the back button to go home!"
         return render_template('customer-rate-flight.html', message = message)
-    elif (data2): 
+    elif (data2):
         error = "Flight already given a rating"
         return render_template('customer-rate-flight.html', error=error)
-    else: 
+    else:
         error = "Ticket ID does not exist or Departure Date in the Future"
         return render_template('customer-rate-flight.html', error=error)
 
@@ -439,10 +438,10 @@ def rate_flight_auth():
 def track_spending(): 
     username = session['username']
     cursor = conn.cursor()
-    getCustYearlySpending = 'SELECT SUM(SoldPrice) AS spend FROM ticket NATURAL JOIN purchasedfor WHERE CustomerEmail = %s AND PurchaseDate >= CURRENT_DATE - INTERVAL 1 YEAR'
+    getCustYearlySpending = 'SELECT SUM(SoldPrice) AS spend FROM ticket NATURAL Join Flight WHERE CustomerEmail = %s AND PurchaseDate >= CURRENT_DATE - INTERVAL 1 YEAR'
     cursor.execute(getCustYearlySpending, (username))
     yearSpend = cursor.fetchone()['spend']
-    getCustMonthlySpending = 'SELECT MONTHNAME(PurchaseDate) AS month, SUM(soldPrice) as spent FROM ticket NATURAL JOIN purchasedfor WHERE CustomerEmail = %s AND PurchaseDate >= CURRENT_DATE - INTERVAL 6 MONTH GROUP BY MONTHNAME(PurchaseDate)'
+    getCustMonthlySpending = 'SELECT MONTHNAME(PurchaseDate) AS month, SUM(soldPrice) as spent FROM ticket NATURAL JOIN Flight WHERE CustomerEmail = %s AND PurchaseDate >= CURRENT_DATE - INTERVAL 6 MONTH GROUP BY MONTHNAME(PurchaseDate)'
     cursor.execute(getCustMonthlySpending, (username))
     custMonthlySpending = cursor.fetchall() 
     labels = []
@@ -477,7 +476,7 @@ def customerSpendingCustom():
 	start_date = request.form['start-date1']
 	#print(request.form)
 	end_date = request.form['end-date1']
-	getCustMonthlySpending = 'SELECT MONTHNAME(PurchaseDate) AS month, YEAR(PurchaseDate) AS year, SUM(soldPrice) as spent FROM ticket NATURAL JOIN purchasedfor WHERE CustomerEmail = %s AND PurchaseDate >= %s AND PurchaseDate <= %s GROUP BY MONTHNAME(PurchaseDate)'
+	getCustMonthlySpending = 'SELECT MONTHNAME(PurchaseDate) AS month, YEAR(PurchaseDate) AS year, SUM(soldPrice) as spent FROM ticket NATURAL JOIN Flight WHERE CustomerEmail = %s AND PurchaseDate >= %s AND PurchaseDate <= %s GROUP BY month, year'
 	cursor.execute(getCustMonthlySpending, (username, start_date, end_date))
 	custMonthlySpending = cursor.fetchall() 
 	labels = []
@@ -487,7 +486,7 @@ def customerSpendingCustom():
 		labels.append(date)
 		values.append(elem['spent'])
 	maximumValue = max(values) + 10
-	return render_template('customer-track-spending-limits.html', labels = labels, values = values, max = maximumValue)
+	return render_template('customer-track-spending.html', labels = labels, values = values, max = maximumValue)
 
 ##### staff #####
 
@@ -520,6 +519,15 @@ def staff_registration_auth():
         return render_template('staff-registration.html', error = error)
     else:
         #password = hashlib.md5(password.encode())
+        # check if the staff airline exists
+        noAirlineQuery = 'SELECT AirlineName FROM Airline WHERE AirlineName = %s'
+        cursor.execute(noAirlineQuery, (airlineName))
+        data = cursor.fetchone()
+
+        if not data:
+            ins = 'INSERT INTO Airline VALUE(%s)'
+            cursor.execute(ins, (airlineName))
+
         ins = 'INSERT INTO AirlineStaff VALUES(%s, md5(%s), %s, %s, %s, %s)'
         cursor.execute(ins, (username, password, first_name, last_name, dateOfBirth, airlineName))
         conn.commit()
@@ -564,16 +572,18 @@ def staff_login_auth():
         name = cursor.fetchone()['FirstName']
         cursor.close()
 
-        return render_template('staff-home.html', name = name)
+        return redirect('staff-home')
     else:
         error = 'Invalid login or username'
         return render_template('staff-login.html', error=error)
 
-@app.route('/staff-home')
+@app.route('/staff-home', methods=['GET', 'POST'])
 def staff_home():
     # cursor used to send queries
     cursor = conn.cursor()
-
+    if len(session) == 0:
+        return render_template('no-session.html')
+    
     username = session['username']
 
     # query to return the name of the staff
@@ -588,20 +598,22 @@ def staff_home():
 def staff_flight_view():
     username = session['username']
     cursor = conn.cursor()
-    query = ('SELECT AirlineName FROM AirlineStaff'
-            'WHERE Username = %s')
+    query = 'SELECT AirlineName FROM AirlineStaff WHERE Username = %s'
     cursor.execute(query, (username))
     airline_name = cursor.fetchone()
     current_airline_name = airline_name['AirlineName']
-    flightQuery = ('SELECT DISTINCT FlightNumber, DepartureDate, DepartureTime, DepartureAirport, ArrivalDate, ArrivalTime FROM AirlineStaff NATURAL JOIN Flight'
-                  'WHERE AirlineName = %s AND (DepartureDate <= CURRENT_DATE + INTERVAL 30 DAY AND (DepartureDate > CURRENT_DATE))'
-                  'OR (DepartureDate = CURRENT_DATE AND DepartureTime > CURRENT_TIME')
+    flightQuery = """
+                  SELECT DISTINCT AirlineName, FlightNumber, DepartureDate, DepartureTime, DepartureAirport, ArrivalDate, ArrivalTime, FlightStatus FROM AirlineStaff NATURAL JOIN Flight NATURAL JOIN Changes
+                  WHERE AirlineName = %s AND (DepartureDate <= CURRENT_DATE + INTERVAL 30 DAY AND (DepartureDate > CURRENT_DATE))
+                  OR (DepartureDate = CURRENT_DATE AND DepartureTime > CURRENT_TIME)
+                  """
     cursor.execute(flightQuery, (current_airline_name))
     data = cursor.fetchall()
     cursor.close()
     return render_template('staff-flight-view.html', flights = data)
 
-@app.route('/staff-create-flight')
+# create flight
+@app.route('/staff-create-flight', methods=['GET', 'POST'])
 def staff_create_flight():
     return render_template('staff-create-flight.html')
 
@@ -609,25 +621,23 @@ def staff_create_flight():
 def staff_create_flight_auth():
     airline_name = request.form['airline-name']
     departure_date = request.form['departure-date']
-    departure_time = request.form['departure-time']
+    departure_time = request.form['departure-time'] + ':00'
     flight_number = request.form['flight-number']
     departure_airport = request.form['departure-airport']
     arrival_airport = request.form['arrival-airport']
-    arrival_date = request.form['arrival-airport']
-    arrival_time = request.form['arrival-time']
+    arrival_date = request.form['arrival-date']
+    arrival_time = request.form['arrival-time'] + ':00'
     base_price = request.form['base-price']
     airplane_ID = request.form['airplane-ID']
 
     cursor = conn.cursor()
-    query = ('SELECT * FROM Flight'
-            'WHERE FlightNumber = %s AND DepartureDate = %s AND DepartureTime = %s')
+    query = 'SELECT * FROM Flight WHERE FlightNumber = %s AND DepartureDate = %s AND DepartureTime = %s'
     cursor.execute(query, (flight_number, departure_date, departure_time))
     data = cursor.fetchone()
 
     if (data):      #flight already exists
-        return
-    
-    else: 
+        return render_template('staff-create-flight.html', error='Flight Already Exists.')
+    else:
         flightValues = 'INSERT INTO Flight VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
         cursor.execute(flightValues, (airline_name, departure_date, departure_time, flight_number, departure_airport, arrival_airport, arrival_date, arrival_time, base_price, airplane_ID))
         arrivesValues = 'INSERT INTO Arrives VALUES(%s, %s, %s, %s)'
@@ -636,11 +646,12 @@ def staff_create_flight_auth():
         cursor.execute(departsValues, (departure_airport, flight_number, departure_date, departure_time))
         username = session['username']
         changesValues = 'INSERT INTO Changes VALUES(%s, %s, %s, %s, %s)'
-        cursor.execute(changesValues, (username, flight_number, departure_date, departure_time, 'On Time'))
+        cursor.execute(changesValues, (username, flight_number, departure_date, departure_time, 'on-time'))
         conn.commit()
         cursor.close()
-        return          #need a new template here
+        return render_template('staff-create-flight.html', success='Successfully Added!')
 
+# update flight status
 @app.route('/staff-update-flight-status')
 def staff_update_flight_status():
     return render_template('staff-update-flight-status.html')
@@ -665,15 +676,15 @@ def staff_update_flight_status_auth():
         cursor.execute(updateFlightQuery, (username, flight_number, departure_date, departure_time, flight_status))
         conn.commit()
         cursor.close()
-        return render_template()        #need new template here   
+        return render_template('staff-update-flight-status.html', success='Successfully Changed!') 
 
     else: 
-        #flight does not exist
-        return
+        return render_template('staff-update-flight-status.html', error='Flight Does Not Exist.')
 
-@app.route('/staff-add-airplane')
+# add airplane
+@app.route('/staff-add-airplane', methods=['GET', 'POST'])
 def staff_add_airplane():
-    render_template('staff-add-airplane.html')
+    return render_template('staff-add-airplane.html')
 
 @app.route('/staff-add-airplane-auth', methods=['GET', 'POST'])
 def staff_add_airplane_auth():
@@ -684,27 +695,28 @@ def staff_add_airplane_auth():
     airplane_age = request.form['airplane-age']
 
     cursor = conn.cursor()
-    query = ('SELECT * FROM Airplane'
-            'WHERE AirlineName = %s AND AirplaneID = %s')
+    query = 'SELECT * FROM Airplane WHERE AirlineName = %s and AirplaneID = %s'
     cursor.execute(query, (airline_name, airplane_id))
     data = cursor.fetchone()
+    cursor.close()
 
     if (data):
-        return
+        return render_template('staff-add-airplane.html', error='This Airplane Already Exists.')
     else:
+        cursor = conn.cursor()
         addAirplane = 'INSERT INTO Airplane VALUES(%s, %s, %s, %s, %s)'
-        cursor.execute(addAirplane, (airline_name, airplane_id, num_seats, airplane_company, airplane_age))
-        getAirplanes = ('SELECT * FROM Airplane'
-                        'WHERE airlineName = %s')
+        cursor.execute(addAirplane, (airline_name, int(airplane_id), int(num_seats), airplane_company, int(airplane_age)))
+        getAirplanes = 'SELECT * FROM Airplane WHERE AirlineName = %s'
         cursor.execute(getAirplanes, (airline_name))
         all_airplanes = cursor.fetchall()
         conn.commit()
         cursor.close()
-        return render_template()        #need a new template here
+        return render_template('staff-add-airplane.html', success="Successfully Added!")    #need a new template here
 
-@app.route('/staff-add-airport')
+# add airport
+@app.route('/staff-add-airport', methods=['GET', 'POST'])
 def staff_add_airport():
-    render_template('staff-add-airport.html')
+    return render_template('staff-add-airport.html')
 
 @app.route('/staff-add-airport-auth', methods=['GET', 'POST'])
 def staff_add_airport_auth():
@@ -715,59 +727,76 @@ def staff_add_airport_auth():
     airport_type = request.form['airport-type']
 
     cursor = conn.cursor()
-    query = ('SELECT * FROM Airport'
-            'WHERE AirportName = %s')
+    query = 'SELECT * FROM Airport WHERE AirportName = %s'
     cursor.execute(query, (airport_name))
     data = cursor.fetchone()
+    cursor.close()
     if (data):
-        return
+        return render_template('staff-add-airport.html', error='This Airport Already Exists.')
     else:
+        cursor = conn.cursor()
         addAirport = 'INSERT INTO Airport Values(%s, %s, %s, %s, %s)'
         cursor.execute(addAirport, (airport_code, airport_name, airport_city, airport_country, airport_type))
         conn.commit()
         cursor.close()
-        return
+        return render_template('staff-add-airport.html', success='Successfully Added!')
 
-
-@app.route('/staff-view-Ratings', methods = ['GET', 'POST'])
+# view customer ratings
+@app.route('/staff-view-ratings')
 def staffViewRatings():
+        return render_template('staff-view-ratings.html')
+
+@app.route('/staff-view-ratings-auth', methods = ['GET', 'POST'])
+def staff_view_ratings_auth():
     flight_number = request.form['flight-number']
-    departure_date = request.form['departure-date']
-    departure_time = request.form['departure-time']
     cursor = conn.cursor()
-    query = ('SELECT CustomerComment, Rate FROM Suggested'
-            'WHERE FlightNumber = %s AND DepartureDate = %s AND DepartureTime = %s')
-    cursor.execute(query, (flight_number, departure_date, departure_time))
+    query = 'SELECT CustomerComment, Rate FROM Suggested WHERE FlightNumber = %s GROUP BY CustomerComment, Rate'
+    cursor.execute(query, (flight_number))
     data = cursor.fetchall()
 
-    if (data):
-        return render_template('staff-view-Ratings.html', flights= data, flight_number = flight_number, date = departure_date, time = departure_time)
-    
-    else: 
-        return
+    query = 'SELECT AVG(Rate) FROM Suggested WHERE FlightNumber = %s'
+    cursor.execute(query, (flight_number))
+    avg_rate = cursor.fetchone()['AVG(Rate)']
 
-@app.route('/staff-view-Frequent-Customers')
+    if (data):
+        return render_template('staff-view-ratings.html', avg_rate=avg_rate, data=data, flight_number = flight_number)
+    
+    return render_template('staff-view-ratings.html', error="This flight does not exist.")
+# view frequent customers
+@app.route('/staff-frequent-customers')
 def staffViewFreqCustomers():
     cursor = conn.cursor()
     username = session['username']
-    airlineQuery = ('SELECT AirlineName'
-                    'FROM AirlineStaff'
-                    'WHERE username = %s')
+    airlineQuery = 'SELECT AirlineName FROM AirlineStaff WHERE username = %s'
     cursor.execute(airlineQuery, (username))
     airline_name = cursor.fetchone()['AirlineName']
     
-    queryYear = ('SELECT CustomerEmail, COUNT(*) AS numFlights'
-                'FROM Ticket'
-                'WHERE AirlineName = %s AND purchaseDate >= CURRENT_DATE - INTERVAL 1 YEAR'
-                'GROUP BY CustomerEmail'
-                'ORDER BY numFlights DESC' 
-                'LIMIT 1')
-    cursor.execute(queryYear, (airline_name))
-    mostFrequentCustomer = cursor.fetchone()
-    cursor.close()
-    return render_template('staff-view-Frequency-Customers.html', mostFrequentCustomer = mostFrequentCustomer)
+    queryYear = """
+                SELECT CustomerEmail, COUNT(*) AS numFlights
+                FROM Ticket
+                WHERE AirlineName = %s AND purchaseDate >= CURRENT_DATE - INTERVAL 1 YEAR
+                GROUP BY CustomerEmail
+                ORDER BY numFlights DESC 
+                LIMIT 1
+                """
 
-@app.route('/staff-view-Customer-Flights', methods = ['GET', 'POST'])
+    cursor.execute(queryYear, (airline_name))
+    top_customer = cursor.fetchone()['CustomerEmail']
+
+    query = """
+            SELECT AirlineName, FlightNumber, DepartureDate, DepartureTime, ArrivalDate, ArrivalTime, FlightStatus
+            FROM Flight NATURAL JOIN Changes NATURAL JOIN Ticket
+            WHERE CustomerEmail = %s AND DepartureDate < CURRENT_DATE OR (DepartureDate = CURRENT_DATE AND DepartureTime < CURRENT_TIME)
+            ORDER BY DepartureDate
+            """
+    cursor.execute(query, (top_customer))
+    data = cursor.fetchall()
+
+    cursor.close()
+    return render_template('staff-frequent-customers.html', top_customer = top_customer, flights = data)
+
+# view customer flights
+@app.route('/staff-view-customer-flights', methods = ['GET', 'POST'])
 def staffViewCustomerFlights():
     customer_email = request.form['customer-email']
     cursor = conn.cursor()
@@ -778,7 +807,7 @@ def staffViewCustomerFlights():
     cursor.execute(airlineQuery, (username))                    
     airline_name = cursor.fetchone()['AirlineName']
     flightsQuery = ('SELECT FlightNumber, DepartureDate, DepartureTime'
-                    'FROM Flight NATURAL JOIN Updates NATURAL JOIN PurchasedFor NATURAL JOIN Ticket NATURAL JOIN Customer'
+                    'FROM Flight NATURAL JOIN Changes NATURAL JOIN PurchasedFor NATURAL JOIN Ticket NATURAL JOIN Customer'
                     'WHERE CustomerEmail = %s AND AirlineName = %s')
     cursor.execute(flightsQuery, (customer_email, airline_name))
     customerFlights = cursor.fetchall()
@@ -789,7 +818,7 @@ def staffViewCustomerFlights():
         return
 
 
-@app.route('/staff-view-Reports')
+@app.route('/staff-view-revenue')
 def staffViewReports():
     cursor = conn.cursor()
     monthReportQuery = ('SELECT COUNT(TicketID) AS totalTickets, MONTHNAME(PurchaseDate) AS Month'
@@ -827,9 +856,9 @@ def staffViewReports():
             values1.append(0)
     maxValue = max(values1) + 1
 
-    return render_template('staff-View-Reports.html', labels = labels, values = values, labels1 = labels1, values1 = values1, max = 10, max1 = maxValue)
+    return render_template('staff-view-revenue.html', labels = labels, values = values, labels1 = labels1, values1 = values1, max = 10, max1 = maxValue)
 
-@app.route('/staff-View-Revenue')
+@app.route('/staff-view-revenue')
 def staffViewRevenue():
     cursor = conn.cursor()
     monthlyRevenueQuery = ('SELECT SUM(SoldPrice) AS Sale'
@@ -844,7 +873,7 @@ def staffViewRevenue():
     cursor.execute(annualRevenueQuery)
     yearSales = cursor.fetchall()
 
-    return render_template('staff-Compare-Revenue.html', monthSales = monthSales, yearSales = yearSales)
+    return render_template('staff-view-revenue.html', monthSales = monthSales, yearSales = yearSales)
 
 
 @app.route('/staff-View-Revenue-Travel-Class')
@@ -856,51 +885,27 @@ def staffViewRevenueTravelClass():
                          'GROUP BY TravelClass')
     cursor.execute(classRevenueQuery)
 
-    return render_template('staff-View-Revenue-Travel-Class.html')
+    return render_template('staff-view-revenue-.html')
 
-@app.route('/staff-view-Top-Destinations')
+@app.route('/staff-top-destinations')
 def staffViewTopDestinations():
     username = session['username']
     cursor = conn.cursor()
-    airlineQuery = ('SELECT AirlineName FROM AirlineStaff'
-                    'WHERE username = %s')
-    cursor.execute(airlineQuery, (username))
-    airline_name = cursor.fetchone()
-    ratingsQuery = ('SELECT AirlineName, FlightNumber, DepartureDate, DepartureTime, AVG(Rate) as averageRating'
-                    'FROM Suggested NATURAL JOIN Flight'
-                    'WHERE AirlineName = %s'
-                    'GROUP BY AirlineName, FlightNumber, DepartureDate, DepartureTime')
-    cursor.execute(ratingsQuery, (airline_name['AirlineName']))
+    query = """
+            SELECT AirportCity FROM Airport AS a LEFT JOIN Flight AS f ON f.ArrivalAirport = a.AirportName
+            GROUP BY AirportName
+            ORDER BY Count(AirportName) DESC LIMIT 3
+            """
 
-    conn.commit()
-    topDestinationsMonthQuery = ('SELECT AirportCity'
-                            'FROM TICKET NATURAL JOIN PurchasedFor NATURAL JOIN Flight INNER JOIN Airport'
-                            'ON arrivalAirport = airport.AirportName'
-                            'WHERE AirlineName = %s AND arrivalDate >= CURRENT_DATE - INTERVAL 3 MONTH'
-                            'GROUP BY AirportName'
-                            'ORDER BY Count(AirportName) DESC'
-                            'LIMIT 3')
-    cursor.execute(topDestinationsMonthQuery, (airline_name['AirlineName']))
-    #topDestMonth = cursor.fetchall()
-    conn.commit()
+    cursor.execute(query)
+    data = cursor.fetchall()
+ 
+    first = data[0]['AirportCity']
+    second = data[1]['AirportCity']
+    third = data[2]['AirportCity']
+    # >= DATEADD(MONTH, -3, GETDATE())
 
-    topDestinationsYearQuery = ('SELECT AirportCity'
-                            'FROM TICKET NATURAL JOIN PurchasedFor NATURAL JOIN Flight INNER JOIN Airport'
-                            'ON arrivalAirport = airport.AirportName'
-                            'WHERE AirlineName = %s AND arrivalDate >= CURRENT_DATE - INTERVAL 1 YEAR'
-                            'GROUP BY AirportName'
-                            'ORDER BY Count(AirportName) DESC'
-                            'LIMIT 3')
-    cursor.execute(topDestinationsYearQuery, (airline_name['AirlineName']))
-    #topDestYear = cursor.fetchall()
-    conn.commit()
-    cursor.close()
-
-    return render_template('staff-view-Top-Destination.html')
-
-
-
-
+    return render_template('staff-top-destinations.html', first = first, second=second, third=third)
 
 
 if __name__ == "__main__":

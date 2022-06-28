@@ -15,8 +15,8 @@
             {% endif %}
             <form action="/staff-add-airplane-auth" method="POST" redirect>
                 <div class="form-group">
-                    <label for="airline-name1">Airline Name</label>
-                    <input class="form-control" id="airline-name1" type="text" placeholder="JFK" name="airline-name" required>
+                    <label for="airline-name2">Airline Name</label>
+                    <input class="form-control" id="airline-name2" type="text" placeholder="Delta" name="airline-name" required>
                 </div>
                 <div class="form-group">
                     <label for="airplane-id1">Airplane ID</label>
@@ -28,7 +28,7 @@
                 </div>
                 <div class="form-group">
                     <label for="airplane-company1">Airplane Company</label>
-                    <input class="form-control" id="airplane-company1" type="text" placeholder="55" name="airplane-company" required>
+                    <input class="form-control" id="airplane-company1" type="text" placeholder="Boeing" name="airplane-company" required>
                 </div>
                 <div class="form-group">
                     <label for="airplane-age1">Airplane Age</label>
@@ -36,9 +36,10 @@
                 </div>
                 <div class="form-group">
                     <button type="submit" class="btn btn-primary btn-block">Submit</button>
-                    <h4><a href="http://127.0.0.1:5000/staff-home">Return Home</a></h4>
                 </div>
             </form>
+            <hr>
+            <h4 class="text-center"><a href="http://127.0.0.1:5000/staff-home">Return Home</a></h4>
         </div>
     </div>
 {% endblock %}

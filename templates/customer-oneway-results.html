@@ -7,8 +7,10 @@
     <div class="container">
         <h3>One-Way Ticket View</h3>
         <hr>
-        <div class="row">
-            <div class="col-md-8">
+        {% if error %}
+            <div class="alert alert-danger">{{error}}</div>
+        {% endif %}
+            <div class="col-md-10 col-md-offset-1">
                 <h4 class="text-center">Upcoming Flights</h4>
                 <table class="table">
                     <colgroup>
@@ -24,16 +26,16 @@
                         <tr>
                             <th>Airline</th>
                             <th>Flight Number</th>
-                            <th>Departure Airport</th>
+                            <th>Departure Date</th>
                             <th>Departure Time</th>
-                            <th>Arrival Airport</th>
+                            <th>Arrival Date</th>
                             <th>Arrival Time</th>
                             <th>Flight Status</th>
                         </tr>
                     </thread>
                     <tbody>
                         {% for line in flights %}
-                        <tr style="height: 80px;">
+                        <tr>
                         <td>{{line['AirlineName']}}</td>
                         <td>{{line['FlightNumber']}}</td>
                         <td>{{line['DepartureDate']}}</td>
@@ -46,7 +48,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6 col-md-offset-3">
                 <form action="/customer-purchase-ticket" method="POST" redirect>
                     <div class="row">
                         <div class="form-group col-md-4">
@@ -67,6 +69,5 @@
                 <hr>
                 <h4 class="text-center"><a href="http://127.0.0.1:5000/customer-flight-search">Back to Flight Search</a></h4>
             </div>
-        </div>
     </div>
 {% endblock %}

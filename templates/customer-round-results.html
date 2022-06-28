@@ -5,12 +5,15 @@
 {% block title %}Customer Flight Search{% endblock %}
 {% block body %}
     <div class="container">
-        <h3>One-Way Ticket View</h3>
+        <h3>Round Ticket View</h3>
         <hr>
+        {% if error %}
+            <div class="alert alert-danger">{{error}}</div>
+        {% endif %}
         <div class="row">
-            <div class="col-md-8">
-                <h4 class="text-center">Upcoming Flights</h4>
-                <table class="table">
+            <div class="col-md-10 col-md-offset-1">
+                <h4 class="text-center">Departing Flights</h4>
+                <table class="table table-striped">
                     <colgroup>
                         <col>
                         <col>
@@ -24,16 +27,54 @@
                         <tr>
                             <th>Airline</th>
                             <th>Flight Number</th>
-                            <th>Departure Airport</th>
+                            <th>Departure Date</th>
                             <th>Departure Time</th>
-                            <th>Arrival Airport</th>
+                            <th>Arrival Date</th>
                             <th>Arrival Time</th>
                             <th>Flight Status</th>
                         </tr>
                     </thread>
                     <tbody>
-                        {% for line in flights %}
-                        <tr style="height: 80px;">
+                        {% for line in departs %}
+                        <tr>
+                        <td>{{line['AirlineName']}}</td>
+                        <td>{{line['FlightNumber']}}</td>
+                        <td>{{line['DepartureDate']}}</td>
+                        <td>{{line['DepartureTime']}}</td>
+                        <td>{{line['ArrivalDate']}}</td>
+                        <td>{{line['ArrivalTime']}}</td>
+                        <td>{{line['FlightStatus']}}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <br>
+                <br>
+                <h4 class="text-center">Return Flights</h4>
+                <table class="table table-striped">
+                    <colgroup>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                    </colgroup>
+                    <thread>
+                        <tr>
+                            <th>Airline</th>
+                            <th>Flight Number</th>
+                            <th>Departure Date</th>
+                            <th>Departure Time</th>
+                            <th>Arrival Date</th>
+                            <th>Arrival Time</th>
+                            <th>Flight Status</th>
+                        </tr>
+                    </thread>
+                    <tbody>
+                        {% for line in returns %}
+                        <tr>
                         <td>{{line['AirlineName']}}</td>
                         <td>{{line['FlightNumber']}}</td>
                         <td>{{line['DepartureDate']}}</td>
@@ -46,37 +87,41 @@
                     </tbody>
                 </table>
             </div>
-            <div class="col-md-4">
-                <form action="/customer-oneway-purchase" method="POST" redirect>
+            <div class="col-md-6 col-md-offset-3">
+                <form action="/customer-purchase-ticket" method="POST" redirect>
                     <div class="row">
                         <div class="form-group col-md-4">
-                            <label for="flight-num2">Flight Number</label>
-                            <input class="form-control" id="flight-num2" type="text" placeholder="1234" name="flight-number" required>
+                            <label for="flight-num15">Depart Flight Number</label>
+                            <input class="form-control" id="flight-num15" type="text" placeholder="1234" name="flight-number1" required>
                         </div>
                         <div class="form-group col-md-4">
-                            <label for="dep-date3">Departure Date</label>
-                            <input class="form-control" id="arr-city3" type="text" placeholder="Shanghai" name="departure-date" required>
+                            <label for="dep-date25">Departure Date</label>
+                            <input class="form-control" id="dep-date25" type="date" placeholder="MM/DD/YYYY" name="departure-date" required>
                         </div>
                         <div class="form-group col-md-4">
-                            <label for="dep-date3">Departure Time</label>
-                            <input class="form-control" id="arr-air3" type="text" placeholder="PVG" name="departure-time" required>
+                            <label for="dep-time25">Departure Time</label>
+                            <input class="form-control" id="dep-time25" type="time" placeholder="Time" name="departure-time" required>
                         </div>
                     </div>
                     <div class="row">
-                        <div class="form-group col-md-">
-                            <label for="arr-date3">Arrival Date</label>
-                            <input class="form-control" id="arr-time3" type="date" placeholder="Shanghai" name="arrival-date" required>
+                        <div class="form-group col-md-4">
+                            <label for="flight-num25">Return Flight Number</label>
+                            <input class="form-control" id="flight-num25" type="text" placeholder="1234" name="flight-number2" required>
                         </div>
                         <div class="form-group col-md-4">
-                            <label for="arr-time3">Arrival Time</label>
-                            <input class="form-control" id="arr-time3" type="time" placeholder="PVG" name="arrival-time" required>
+                            <label for="dep-date2">Return Date</label>
+                            <input class="form-control" id="dep-date25" type="date" placeholder="MM/DD/YYYY" name="return-date" required>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="dep-time25">Return Time</label>
+                            <input class="form-control" id="dep-time25" type="time" placeholder="Time" name="return-time" required>
                         </div>
                     </div>
                     <button type="submit" class="btn btn-primary btn-block">Select Flight</button>
                 </form>
                 <hr>
                 <h4 class="text-center"><a href="http://127.0.0.1:5000/customer-flight-search">Back to Flight Search</a></h4>
-            </div>
+            </div>           
         </div>
     </div>
 {% endblock %}

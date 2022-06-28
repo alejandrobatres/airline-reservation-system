@@ -16,29 +16,34 @@
             <form action="/staff-add-airport-auth" method="POST" redirect>
                 <div class="form-group">
                     <label for="airport-code1">Airport Code</label>
-                    <input class="form-control" id="airport-code1" type="text" placeholder="" name="airport-code" required>
+                    <input class="form-control" id="airport-code1" type="text" placeholder="JFK" name="airport-code" required>
                 </div>
                 <div class="form-group">
                     <label for="airport-name1">Airport Name</label>
-                    <input class="form-control" id="airport-name1" type="text" placeholder="" name="airport-name" required>
+                    <input class="form-control" id="airport-name1" type="text" placeholder="JFK" name="airport-name" required>
                 </div>
                 <div class="form-group">
                     <label for="airport-city1">Airport City</label>
-                    <input class="form-control" id="airport-city1" type="text" placeholder="" name="airport-city" required>
+                    <input class="form-control" id="airport-city1" type="text" placeholder="NYC" name="airport-city" required>
                 </div>
                 <div class="form-group">
                     <label for="airport-country1">Airport Country</label>
-                    <input class="form-control" id="airport-country1" type="text" placeholder="" name="airport-country" required>
+                    <input class="form-control" id="airport-country1" type="text" placeholder="USA" name="airport-country" required>
                 </div>
                 <div class="form-group">
                     <label for="airport-type1">Airport Type</label>
-                    <input class="form-control" id="airport-type1" type="text" placeholder="" name="airport-type" required>
+                    <select id="airport-type1" class="form-control" name="airport-type">
+                        <option value="domestic">Domestic</option>
+                        <option value="international">International</option>
+                        <option value="both">Both</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <button type="submit" class="btn btn-primary btn-block">Submit</button>
-                    <h4><a href="http://127.0.0.1:5000/staff-home">Return Home</a></h4>
                 </div>
             </form>
+            <hr>
+            <h4 class="text-center"><a href="http://127.0.0.1:5000/staff-home">Return Home</a></h4>
         </div>
     </div>
 {% endblock %}

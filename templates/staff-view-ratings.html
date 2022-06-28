@@ -1,0 +1,56 @@
+{% extends "layouts/base.html" %}
+{% block head %}
+<script src="js/main.js"></script>
+{% endblock %}
+{% block title %}Staff View Flights{% endblock %}
+{% block body %}
+    <div class="container">
+        <h3>Staff Rating</h3>
+        <hr>
+        {% if error %}
+        <div class="alert alert-danger">{{error}}</div>
+        {% endif %}
+        <div class="col-md-4 col-md-offset-4">
+            <form action="/staff-view-ratings-auth" method="POST">
+                <div class="form-group">
+                    <label for="flight-num6">Flight Number</label>
+                    <input class="form-control" id="flight-num6" type="text" placeholder="123" name="flight-number" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Submit</button>
+            </form>
+            <br>
+        </div>
+        {% if data %}
+        <div class="col-md-8 col-md-offset-2">
+            <h4>Average Rating for flight {{flight_number}}: {{avg_rate}} / 5.0</h4>
+            <table class="table table-striped">
+                <colgroup>
+                    <col>
+                    <col>
+                    <col>
+                    <col>
+                    <col>
+                    <col>
+                    <col>
+                </colgroup>
+                <thread>
+                    <tr>
+                        <th>Comment</th>
+                        <th>Rating</th>
+                    </tr>
+                </thread>
+                <tbody>
+                    {% for line in data %}
+                    <tr>
+                      <td>{{line['CustomerComment']}}</td>
+                      <td>{{line['Rate']}}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+            </table>
+            <hr>
+        </div>
+        {% endif %}
+        <h4 class="text-center"><a href="http://127.0.0.1:5000/staff-home">Return Home</a></h4>
+    </div>
+{% endblock %}

@@ -14,58 +14,68 @@
             {% endif %}
             <form action="/customer-registration-auth" method="POST" redirect="true">
                 <div class="form-group">
-                    <label for="cust-name-input">Full name</label>
-                    <input class="form-control" id="cust-name-input" type="text" placeholder="Joe Biden" name="name" required>
-                </div>
-                <div class="form-group">
-                    <label for="cust-phone-input">Phone</label>
-                    <input class="form-control" id="cust-phone-input" type="text" placeholder="(123)456-7890" name="phone" maxlength="11" required>
-                </div>
-                <div class="form-group">
                     <label for="cust-email-input">Email</label>
                     <input class="form-control" id="cust-email-input" type="text" placeholder="joe@nyu.edu" name="email" required>
                 </div>
                 <div class="form-group">
-                    <label for="cust-buildnum-input">Building Number</label>
-                    <input class="form-control" id="cust-buildnum-input" type="text" placeholder="123" name="building-number" maxlength="3" required>
-                </div>
-                <div class="form-group">
-                    <label for="cust-street-input">Street</label>
-                    <input class="form-control" id="cust-street-input" type="text" placeholder="Jay Sreet" name="street" required>
-                </div>
-                <div class="form-group">
-                    <label for="cust-city-input">City</label>
-                    <input class="form-control" id="cust-city-input" type="text" placeholder="New York" name="city" required>
-                </div>
-                <div class="form-group">
-                    <label for="cust-state-input">State</label>
-                    <input class="form-control" id="cust-state-input" type="text" placeholder="New York" name="state" required>
-                </div>
-                <div class="form-group">
-                    <label for="cust-passnum-input">Passport Number</label>
-                    <input class="form-control" id="cust-passnum-input" type="text" placeholder="123456789" name="passport-number" maxlength="8" required>
-                </div>
-                <div class="form-group">
-                    <label for="cust-passexp-input">Passport Expiration</label>
-                    <input class="form-control" id="cust-passexp-input" type="date" placeholder="MM/DD/YYYY" name="passport-expiration" required>
-                </div>
-                <div class="form-group">
-                    <label for="cust-passcount-input">Passport Country</label>
-                    <input class="form-control" id="cust-passcount-input" type="text" placeholder="USA" name="passport-country" maxlength="3" required>
-                </div>
-                <div class="form-group">
-                    <label for="cust-dob-input">Date of Birth</label>
-                    <input class="form-control" id="cust-dob-input" type="date" placeholder="MM/DD/YYYY" name="date-of-birth" required>
-                </div>
-                <div class="form-group">
                     <label for="cust-password-input">Password</label>
-                    <input class="form-control" id="cust-password-input" type="text" placeholder="abc123" name="password" required>
+                    <input class="form-control" id="cust-password-input" type="password" placeholder="abc123" name="password" required>
                 </div>
                 <div class="form-group">
-                    <button type="submit" class="btn btn-secondary">Submit</button>
-                    <h4><a href="http://127.0.0.1:5000">Return Home</a></h4>
+                    <label for="cust-name-input">Full name</label>
+                    <input class="form-control" id="cust-name-input" type="text" placeholder="Joe Biden" name="name" required>
+                </div>
+                <div class="row">
+                    <div class="form-group col-md-4">
+                        <label for="cust-buildnum-input">Building Number</label>
+                        <input class="form-control" id="cust-buildnum-input" type="text" placeholder="123" name="building-number" maxlength="10" required>
+                    </div>
+                    <div class="form-group col-md-8">
+                        <label for="cust-street-input">Street</label>
+                        <input class="form-control" id="cust-street-input" type="text" placeholder="Jay Sreet" name="street" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group col-md-8">
+                        <label for="cust-city-input">City</label>
+                        <input class="form-control" id="cust-city-input" type="text" placeholder="New York" name="city" required>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="cust-state-input">State</label>
+                        <input class="form-control" id="cust-state-input" type="text" placeholder="New York" name="state" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="cust-phone-input">Phone</label>
+                    <input class="form-control" id="cust-phone-input" type="text" placeholder="(123) 456-7890" name="phone" maxlength="11" required>
+                </div>
+                <div class="row">
+                    <div class="form-group col-md-6">
+                        <label for="cust-passnum-input">Passport Number</label>
+                        <input class="form-control" id="cust-passnum-input" type="text" placeholder="12345" name="passport-number" maxlength="8" required>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="cust-passexp-input">Passport Expiration</label>
+                        <input class="form-control" id="cust-passexp-input" type="date" placeholder="MM/DD/YYYY" name="passport-expiration" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group col-md-6">
+                        <label for="cust-passcount-input">Passport Country</label>
+                        <input class="form-control" id="cust-passcount-input" type="text" placeholder="USA" name="passport-country" maxlength="3" required>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="cust-dob-input">Date of Birth</label>
+                        <input class="form-control" id="cust-dob-input" type="date" placeholder="MM/DD/YYYY" name="date-of-birth" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary btn-block">Submit</button>
                 </div>
             </form>
+            <hr>
+            <h4 class="text-center"><a href="http://127.0.0.1:5000/">Return Home</a></h4>
         </div>
     </div>
 {% endblock %}

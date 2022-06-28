@@ -2,10 +2,12 @@
 {% block head %}
 <script src="js/main.js"></script>
 {% endblock %}
-{% block title %}Public View Flights{% endblock %}
+{% block title %}Top Customer{% endblock %}
 {% block body %}
     <div class="container">
-        <h2 class="text-center">Upcoming Flights</h2>
+        <h3>Top Customer</h3>
+        <hr>
+        <h4 class="text-center">The top customer is {{top_customer}}!</h4>
         <div class="col-md-8 col-md-offset-2">
             <table class="table table-striped">
                 <colgroup>
@@ -22,7 +24,6 @@
                         <th>Airline</th>
                         <th>Flight Number</th>
                         <th>Departure Airport</th>
-                        <th>Departure Date</th>
                         <th>Departure Time</th>
                         <th>Arrival Airport</th>
                         <th>Arrival Time</th>
@@ -34,10 +35,9 @@
                     <tr>
                       <td>{{line['AirlineName']}}</td>
                       <td>{{line['FlightNumber']}}</td>
-                      <td>{{line['DepartureAirport']}}</td>
                       <td>{{line['DepartureDate']}}</td>
                       <td>{{line['DepartureTime']}}</td>
-                      <td>{{line['ArrivalAirport']}}</td>
+                      <td>{{line['ArrivalDate']}}</td>
                       <td>{{line['ArrivalTime']}}</td>
                       <td>{{line['FlightStatus']}}</td>
                     </tr>
@@ -45,7 +45,7 @@
                   </tbody>
             </table>
             <hr>
-            <h4 class="text-center"><a href="http://127.0.0.1:5000">Return Home</a></h4>
+            <h4 class="text-center"><a href="http://127.0.0.1:5000/staff-home">Return Home</a></h4>
         </div>
     </div>
 {% endblock %}

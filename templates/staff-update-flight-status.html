@@ -16,25 +16,29 @@
             <form action="/staff-update-flight-status-auth" method="POST" redirect>
                 <div class="form-group">
                     <label for="flight-number5">Flight Number</label>
-                    <input class="form-control" id="flight-number5" type="text" placeholder="" name="flight-number" required>
+                    <input class="form-control" id="flight-number5" type="text" placeholder="12345" name="flight-number" required>
                 </div>
                 <div class="form-group">
                     <label for="departure-date5">Departure Date</label>
-                    <input class="form-control" id="departure-date5" type="date" placeholder="" name="departure-date" required>
+                    <input class="form-control" id="departure-date5" type="date" placeholder="MM/DD/YYYY" name="departure-date" required>
                 </div>
                 <div class="form-group">
                     <label for="departure-time5">Departure Time</label>
-                    <input class="form-control" id="departure-time5" type="date" placeholder="" name="departure-time" required>
+                    <input class="form-control" id="departure-time5" type="time" placeholder="MM:HH" name="departure-time" required>
                 </div>
                 <div class="form-group">
                     <label for="flight-status5">Flight Status</label>
-                    <input class="form-control" id="flight-status5" type="text" placeholder="" name="flight-status" required>
+                    <select id="flight-status5" class="form-control" name="flight-status">
+                        <option value="on-time">On Time</option>
+                        <option value="delayed">Delayed</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <button type="submit" class="btn btn-primary btn-block">Submit</button>
-                    <h4><a href="http://127.0.0.1:5000/staff-home">Return Home</a></h4>
                 </div>
             </form>
+            <hr>
+            <h4 class="text-center"><a href="http://127.0.0.1:5000/staff-home">Return Home</a></h4>
         </div>
     </div>
 {% endblock %}

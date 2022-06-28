@@ -2,15 +2,12 @@
 {% block head %}
 <script src="js/main.js"></script>
 {% endblock %}
-{% block title %}Customer One-Way Ticket Purchase{% endblock %}
+{% block title %}Ticket Purchase{% endblock %}
 {% block body %}
     <div class="container">
         <h3>Ticket Purchase</h3>
         <hr>
         <div class="col-md-6 col-md-offset-3">
-            {% if success %}
-            <div class="alert alert-success">{{success}}</div>
-            {% endif %}
             <div class="row">
                 <h4>Flight Details</h4> 
                 <dl class="dl-horizontal text-overflow">

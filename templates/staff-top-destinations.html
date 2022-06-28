@@ -1,0 +1,25 @@
+{% extends "layouts/base.html" %}
+{% block head %}
+<script src="js/main.js"></script>
+{% endblock %}
+{% block title %}Staff View Flights{% endblock %}
+{% block body %}
+    <div class="container">
+        <h3>Top Destinations</h3>
+        <hr>
+        <div class="col-md-8 col-md-offset-2">
+            <h4 class="text-center">Last Year</h4>
+            <hr>
+            <h2 class="text-center">#1 {{first}}</h2>
+            <h3 class="text-center">#2 {{second}}</h3>
+            <h3 class="text-center">#3 {{third}}</h3>
+            <!-- <br>
+            <h4 class="text-center">Last 3 Months</h4>
+            <h2 class="text-center">#1 {{first_month}}</h2>
+            <h3 class="text-center">#2 {{second_month}}</h3>
+            <h3 class="text-center">#3 {{third_month}}</h3> -->
+            <hr>
+            <h4 class="text-center"><a href="http://127.0.0.1:5000/staff-home">Return Home</a></h4>
+        </div>
+    </div>
+{% endblock %}
